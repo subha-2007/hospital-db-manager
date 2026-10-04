@@ -3,669 +3,831 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>🏥 Hospital Blood Bank DB Manager</title>
+<title>Sanguis Registry — Hospital Blood Bank</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 3c5 7 9 11.5 9 17a9 9 0 0 1-18 0c0-5.5 4-10 9-17z' fill='%237a1f2b'/%3E%3C/svg%3E"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,300..600&family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
 <style>
-/* ─── Reset & base ─────────────────────────────────────────────────────── */
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Segoe UI',system-ui,sans-serif;background:#0f1117;color:#e2e8f0;min-height:100vh;display:flex;flex-direction:column}
 :root{
-  --red:#e53e3e;--red-dark:#c53030;--red-light:#fed7d7;
-  --accent:#fc8181;--accent2:#f6ad55;
-  --bg:#0f1117;--bg2:#1a1d27;--bg3:#242838;--bg4:#2d3250;
-  --border:#3a3f5c;--text:#e2e8f0;--muted:#718096;
-  --green:#68d391;--yellow:#f6e05e;--blue:#63b3ed;--purple:#b794f4;
+  --paper:#f4efe6;--paper-2:#ebe4d7;--card:#fbf8f2;--ink:#1e1a17;--ink-2:#4a423b;--muted:#8a7f73;
+  --line:#d9cfbf;--line-2:#e6ddcf;--wine:#7a1f2b;--wine-2:#5e1520;--wine-soft:#f1dedd;
+  --gold:#a8854a;--sage:#4f6b55;--sage-soft:#e2e9df;--amber:#9a6a1c;--amber-soft:#f3e7cf;--slate:#3f5566;--slate-soft:#e0e6ea;
+  --display:'Fraunces',Georgia,serif;--sans:'Hanken Grotesk',ui-sans-serif,sans-serif;--mono:'JetBrains Mono',ui-monospace,monospace;
+  --ease:cubic-bezier(.2,.7,.2,1);
 }
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:var(--sans);background:var(--paper);color:var(--ink);font-size:15px;-webkit-font-smoothing:antialiased;display:flex;flex-direction:column;overflow:hidden}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.35;mix-blend-mode:multiply;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .45 0 0 0 0 .38 0 0 0 0 .3 0 0 0 .18 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+::selection{background:var(--wine);color:var(--paper)}
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-thumb{background:var(--line);border-radius:8px;border:2px solid var(--paper)}
+::-webkit-scrollbar-track{background:transparent}
+svg.i{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
 
-/* ─── Scrollbar ────────────────────────────────────────────────────────── */
-::-webkit-scrollbar{width:6px;height:6px}
-::-webkit-scrollbar-track{background:var(--bg2)}
-::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+/* Masthead */
+header{position:relative;z-index:2;display:grid;grid-template-columns:auto 1fr auto;align-items:end;gap:28px;padding:22px 36px 18px;border-bottom:1px solid var(--ink)}
+header::after{content:"";position:absolute;left:36px;right:36px;bottom:-5px;border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:14px}
+.brand-mark{width:38px;height:38px;border-radius:50%;background:var(--wine);display:grid;place-items:center;box-shadow:inset 0 0 0 3px var(--paper),0 0 0 1px var(--wine)}
+.brand-mark svg{width:16px;height:16px;fill:var(--paper)}
+.brand h1{font-family:var(--display);font-weight:400;font-size:1.75rem;letter-spacing:-.01em;line-height:1}
+.brand h1 em{font-style:italic;color:var(--wine)}
+.brand small{display:block;font-size:.68rem;letter-spacing:.24em;text-transform:uppercase;color:var(--muted);margin-top:6px}
+nav.tabs{display:flex;gap:4px;justify-self:center}
+.tab{appearance:none;background:none;border:0;font:inherit;font-size:.82rem;font-weight:500;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2);padding:10px 16px;cursor:pointer;position:relative;display:flex;align-items:center;gap:8px;transition:color .2s}
+.tab::after{content:"";position:absolute;left:16px;right:16px;bottom:2px;height:1px;background:var(--wine);transform:scaleX(0);transform-origin:left;transition:transform .35s var(--ease)}
+.tab:hover{color:var(--ink)}
+.tab.active{color:var(--wine)}
+.tab.active::after{transform:scaleX(1)}
+.conn{display:flex;align-items:center;gap:10px;font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.status-dot{width:8px;height:8px;border-radius:50%;background:var(--sage);box-shadow:0 0 0 4px var(--sage-soft)}
+.status-dot.offline{background:var(--wine);box-shadow:0 0 0 4px var(--wine-soft)}
+.status-dot.pending{background:var(--line);box-shadow:0 0 0 4px var(--paper-2)}
 
-/* ─── Header ───────────────────────────────────────────────────────────── */
-header{background:linear-gradient(135deg,#7b0000 0%,#c53030 50%,#7b0000 100%);padding:16px 24px;display:flex;align-items:center;gap:14px;box-shadow:0 4px 20px rgba(197,48,48,.4)}
-header .logo{font-size:32px}
-header h1{font-size:1.5rem;font-weight:700;letter-spacing:.5px;color:#fff}
-header h1 span{font-size:.9rem;font-weight:400;opacity:.8;display:block}
-.status-dot{width:10px;height:10px;border-radius:50%;background:#68d391;margin-left:auto;box-shadow:0 0 8px #68d391;animation:pulse 2s infinite}
-@keyframes pulse{0%,100%{box-shadow:0 0 6px #68d391}50%{box-shadow:0 0 14px #68d391,0 0 6px #fff}}
-.status-dot.offline{background:#fc8181;box-shadow:0 0 8px #fc8181}
-
-/* ─── Layout ───────────────────────────────────────────────────────────── */
-.app{display:flex;flex:1;overflow:hidden;height:calc(100vh - 68px)}
-
-/* ─── Sidebar ──────────────────────────────────────────────────────────── */
-.sidebar{width:220px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
-.sidebar-title{padding:14px 16px;font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);border-bottom:1px solid var(--border)}
+/* Layout */
+.app{position:relative;z-index:1;display:grid;grid-template-columns:260px 1fr;flex:1;min-height:0}
+.sidebar{border-right:1px solid var(--line);padding:28px 0 20px;display:flex;flex-direction:column;min-height:0}
+.eyebrow{font-size:.66rem;font-weight:600;letter-spacing:.24em;text-transform:uppercase;color:var(--muted)}
+.sidebar .eyebrow{padding:0 28px 14px}
 .table-list{overflow-y:auto;flex:1}
-.table-item{padding:11px 16px;cursor:pointer;display:flex;align-items:center;gap:8px;transition:all .15s;border-left:3px solid transparent;font-size:.9rem}
-.table-item:hover{background:var(--bg3);color:var(--accent)}
-.table-item.active{background:var(--bg4);border-left-color:var(--red);color:var(--accent);font-weight:600}
-.table-item .ticon{font-size:14px;opacity:.7}
-.table-count{margin-left:auto;background:var(--bg4);color:var(--muted);font-size:.7rem;padding:2px 7px;border-radius:10px}
-.table-item.active .table-count{background:var(--red);color:#fff}
+.table-item{display:grid;grid-template-columns:28px 1fr auto;align-items:baseline;gap:4px;padding:11px 28px;cursor:pointer;border-left:2px solid transparent;transition:background .2s,border-color .2s;opacity:0;animation:rise .5s var(--ease) forwards}
+.table-item .num{font-family:var(--mono);font-size:.68rem;color:var(--muted)}
+.table-item .tname{font-family:var(--display);font-size:1.05rem;text-transform:capitalize}
+.table-item .table-count{font-family:var(--mono);font-size:.72rem;color:var(--muted)}
+.table-item:hover{background:var(--paper-2)}
+.table-item.active{border-left-color:var(--wine);background:var(--card)}
+.table-item.active .tname{color:var(--wine);font-style:italic}
+.sidebar-foot{padding:18px 28px 0;margin-top:12px;border-top:1px solid var(--line-2);font-size:.75rem;color:var(--muted);line-height:1.55}
+.main{display:flex;flex-direction:column;min-height:0;min-width:0}
+.panel{display:none;flex:1;min-height:0;flex-direction:column}
+.panel.active{display:flex;animation:fade .4s var(--ease)}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 
-/* ─── Main ─────────────────────────────────────────────────────────────── */
-.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+/* Section heading */
+.section-head{display:flex;align-items:end;justify-content:space-between;gap:20px;padding:30px 40px 20px;flex-wrap:wrap}
+.section-head h2{font-family:var(--display);font-weight:300;font-size:2.4rem;letter-spacing:-.02em;line-height:1;text-transform:capitalize}
+.section-head h2 em{font-style:italic;color:var(--wine)}
+.section-head .meta{font-size:.82rem;color:var(--muted);margin-top:8px}
 
-/* ─── Tabs ─────────────────────────────────────────────────────────────── */
-.tabs{display:flex;background:var(--bg2);border-bottom:1px solid var(--border);padding:0 16px;gap:4px}
-.tab{padding:12px 18px;cursor:pointer;font-size:.85rem;font-weight:500;border-bottom:2px solid transparent;color:var(--muted);transition:all .15s;user-select:none}
-.tab:hover{color:var(--text)}
-.tab.active{color:var(--accent);border-bottom-color:var(--red);font-weight:600}
+/* Buttons & inputs */
+.btn{appearance:none;font:inherit;font-size:.8rem;font-weight:600;letter-spacing:.04em;padding:9px 16px;border-radius:999px;border:1px solid var(--ink);background:transparent;color:var(--ink);cursor:pointer;display:inline-flex;align-items:center;gap:8px;transition:background .2s,color .2s,border-color .2s,transform .15s}
+.btn:hover{background:var(--ink);color:var(--paper)}
+.btn:active{transform:translateY(1px)}
+.btn:focus-visible,.tab:focus-visible,.table-item:focus-visible{outline:2px solid var(--wine);outline-offset:2px}
+.btn-primary{background:var(--wine);border-color:var(--wine);color:var(--paper)}
+.btn-primary:hover{background:var(--wine-2);border-color:var(--wine-2)}
+.btn-ghost{border-color:var(--line)}
+.btn-ghost:hover{border-color:var(--ink)}
+.btn-sm{padding:6px 12px;font-size:.72rem}
+.icon-btn{appearance:none;border:1px solid transparent;background:none;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;color:var(--ink-2);cursor:pointer;transition:all .2s}
+.icon-btn:hover{border-color:var(--line);background:var(--card);color:var(--ink)}
+.icon-btn.danger:hover{color:var(--wine);border-color:var(--wine-soft)}
+.search{position:relative;display:flex;align-items:center}
+.search svg{position:absolute;left:12px;color:var(--muted)}
+.search input{font:inherit;font-size:.85rem;width:240px;padding:9px 14px 9px 36px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--ink);outline:none;transition:border-color .2s,width .3s var(--ease)}
+.search input:focus{border-color:var(--ink);width:280px}
+.toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 
-/* ─── Content panels ───────────────────────────────────────────────────── */
-.panel{display:none;flex:1;overflow:hidden;flex-direction:column}
-.panel.active{display:flex}
+/* Data table */
+.table-wrap{flex:1;overflow:auto;margin:0 40px;border-top:1px solid var(--ink)}
+table.data{width:100%;border-collapse:collapse;font-size:.86rem}
+table.data thead th{position:sticky;top:0;background:var(--paper);text-align:left;font-size:.66rem;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);padding:14px 16px 12px;border-bottom:1px solid var(--line);white-space:nowrap;z-index:1}
+table.data tbody td{padding:13px 16px;border-bottom:1px solid var(--line-2);max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+table.data tbody tr{transition:background .15s}
+table.data tbody tr:hover{background:var(--card)}
+td.num-cell{font-family:var(--mono);font-size:.8rem;color:var(--ink-2)}
+td.actions{text-align:right;width:1%}
+td.actions .wrap{display:inline-flex;gap:2px;opacity:.35;transition:opacity .2s}
+tr:hover td.actions .wrap{opacity:1}
+.null-val{color:var(--muted);font-style:italic;font-family:var(--display)}
+.badge{display:inline-flex;align-items:center;gap:6px;font-size:.72rem;font-weight:600;letter-spacing:.04em;padding:3px 10px;border-radius:999px}
+.badge::before{content:"";width:5px;height:5px;border-radius:50%;background:currentColor}
+.badge-green{background:var(--sage-soft);color:var(--sage)}
+.badge-red{background:var(--wine-soft);color:var(--wine)}
+.badge-yellow{background:var(--amber-soft);color:var(--amber)}
+.badge-blue{background:var(--slate-soft);color:var(--slate)}
+.group{display:inline-block;min-width:36px;text-align:center;font-family:var(--display);font-weight:600;font-size:.9rem;color:var(--wine);border:1px solid var(--wine-soft);border-radius:6px;padding:1px 6px;background:var(--card)}
+.pagination{display:flex;align-items:center;justify-content:space-between;padding:14px 40px 18px;font-size:.78rem;color:var(--muted);border-top:1px solid var(--line)}
+.pagination strong{color:var(--ink);font-weight:600}
+.pagination .pg{display:flex;gap:8px}
+.skeleton td span{display:block;height:10px;border-radius:4px;background:linear-gradient(90deg,var(--paper-2),var(--card),var(--paper-2));background-size:200% 100%;animation:shimmer 1.4s infinite}
+@keyframes shimmer{to{background-position:-200% 0}}
 
-/* ─── Toolbar ──────────────────────────────────────────────────────────── */
-.toolbar{padding:12px 16px;display:flex;gap:8px;align-items:center;background:var(--bg3);border-bottom:1px solid var(--border);flex-wrap:wrap}
-.toolbar input[type=search]{flex:1;min-width:180px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:7px 12px;color:var(--text);font-size:.85rem;outline:none;transition:border .15s}
-.toolbar input[type=search]:focus{border-color:var(--red)}
-.btn{padding:7px 14px;border-radius:6px;border:none;cursor:pointer;font-size:.82rem;font-weight:600;transition:all .15s;display:inline-flex;align-items:center;gap:5px}
-.btn-red{background:var(--red);color:#fff}.btn-red:hover{background:var(--red-dark)}
-.btn-outline{background:transparent;border:1px solid var(--border);color:var(--text)}.btn-outline:hover{border-color:var(--accent);color:var(--accent)}
-.btn-green{background:#276749;color:#fff}.btn-green:hover{background:#22543d}
-.btn-blue{background:#2b6cb0;color:#fff}.btn-blue:hover{background:#2c5282}
-.btn-yellow{background:#744210;color:#f6e05e}.btn-yellow:hover{background:#5f370e}
-.btn:disabled{opacity:.4;cursor:not-allowed}
+/* Empty */
+.empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:60px 20px;color:var(--muted);text-align:center}
+.empty .ornament{font-family:var(--display);font-style:italic;font-size:3.6rem;color:var(--line);line-height:1}
+.empty p{font-family:var(--display);font-size:1.2rem;color:var(--ink-2)}
+.empty span{font-size:.85rem}
 
-/* ─── Data table ───────────────────────────────────────────────────────── */
-.table-wrap{flex:1;overflow:auto}
-table{width:100%;border-collapse:collapse;font-size:.82rem}
-thead th{position:sticky;top:0;background:#1e2235;padding:10px 14px;text-align:left;color:var(--accent2);font-weight:600;font-size:.75rem;text-transform:uppercase;letter-spacing:.8px;border-bottom:2px solid var(--border);white-space:nowrap}
-tbody tr{border-bottom:1px solid var(--border);transition:background .1s}
-tbody tr:hover{background:var(--bg3)}
-tbody td{padding:9px 14px;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:middle}
-.null-val{color:var(--muted);font-style:italic}
-.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:.72rem;font-weight:600}
-.badge-green{background:#1c4532;color:#68d391}
-.badge-red{background:#742a2a;color:#fc8181}
-.badge-yellow{background:#5f370e;color:#f6e05e}
-.badge-blue{background:#1a365d;color:#63b3ed}
-.action-cell{white-space:nowrap;display:flex;gap:6px}
-.btn-icon{padding:4px 8px;font-size:.75rem}
+/* Overview */
+.overview{overflow-y:auto;flex:1;padding-bottom:40px}
+.stats{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;margin:0 40px;border-top:1px solid var(--ink);border-bottom:1px solid var(--line)}
+.stat{padding:22px 24px 24px;border-right:1px solid var(--line-2);opacity:0;animation:rise .6s var(--ease) forwards}
+.stat:last-child{border-right:0}
+.stat .v{font-family:var(--display);font-weight:300;font-size:3rem;letter-spacing:-.03em;line-height:1;margin-top:12px}
+.stat .v small{font-size:1rem;color:var(--muted);margin-left:4px;letter-spacing:0}
+.stat:first-child .v{color:var(--wine);font-style:italic}
+.stock{margin:34px 40px 0}
+.stock-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:14px;margin-top:16px}
+.vial{background:var(--card);border:1px solid var(--line-2);border-radius:14px;padding:18px 14px 14px;display:flex;flex-direction:column;align-items:center;gap:12px;opacity:0;animation:rise .6s var(--ease) forwards}
+.vial .tube{width:28px;height:84px;border:1.5px solid var(--ink);border-radius:4px 4px 14px 14px;position:relative;overflow:hidden;background:var(--paper)}
+.vial .tube::before{content:"";position:absolute;top:-1px;left:-5px;right:-5px;height:7px;border:1.5px solid var(--ink);border-radius:2px;background:var(--card);z-index:1}
+.vial .fill{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(180deg,#9b2c38,var(--wine-2));transform-origin:bottom;transform:scaleY(0);animation:pour 1.1s var(--ease) forwards}
+@keyframes pour{to{transform:scaleY(var(--lvl))}}
+.vial .g{font-family:var(--display);font-size:1.35rem;font-weight:500}
+.vial .u{font-family:var(--mono);font-size:.7rem;color:var(--muted)}
+.vial.low .u{color:var(--wine)}
+.ledgers{display:grid;grid-template-columns:1fr 1fr;gap:28px;margin:36px 40px 0}
+.ledger h3{font-family:var(--display);font-weight:400;font-size:1.35rem;margin:6px 0 12px}
+.ledger h3 em{color:var(--wine)}
+.ledger ul{list-style:none;border-top:1px solid var(--ink)}
+.ledger li{display:grid;grid-template-columns:auto 1fr auto;gap:14px;align-items:center;padding:13px 2px;border-bottom:1px solid var(--line-2);font-size:.88rem}
+.ledger li .sub{font-size:.76rem;color:var(--muted);margin-top:2px}
+.ledger li .right{font-family:var(--mono);font-size:.76rem;color:var(--ink-2);text-align:right}
+.ledger li .right.urgent{color:var(--wine)}
+.ledger .none{padding:18px 2px;color:var(--muted);font-family:var(--display);font-style:italic}
 
-/* ─── Pagination ───────────────────────────────────────────────────────── */
-.pagination{padding:10px 16px;display:flex;align-items:center;gap:10px;background:var(--bg2);border-top:1px solid var(--border);font-size:.8rem;color:var(--muted)}
-.pagination .pg-btn{padding:4px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:5px;cursor:pointer;color:var(--text);font-size:.8rem;transition:all .15s}
-.pagination .pg-btn:hover:not(:disabled){border-color:var(--accent);color:var(--accent)}
-.pagination .pg-btn:disabled{opacity:.3;cursor:default}
+/* SQL console */
+.console{display:grid;grid-template-rows:auto auto 1fr;flex:1;min-height:0;padding:0 40px 24px;gap:0}
+.editor{background:var(--ink);border-radius:14px 14px 0 0;position:relative;overflow:hidden}
+.editor-bar{display:flex;align-items:center;gap:8px;padding:10px 16px;border-bottom:1px solid #3a332d;color:#a89d90;font-size:.7rem;letter-spacing:.18em;text-transform:uppercase}
+.editor-bar .dots{display:flex;gap:6px;margin-right:8px}
+.editor-bar .dots i{width:9px;height:9px;border-radius:50%;background:#4a423b}
+textarea.sql-input{display:block;width:100%;height:190px;resize:vertical;background:transparent;border:0;outline:none;color:#f1e9dc;font-family:var(--mono);font-size:.88rem;line-height:1.7;padding:16px 20px;caret-color:#e2a0a6}
+textarea.sql-input::placeholder{color:#7d7368}
+.sql-controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 16px;background:var(--card);border:1px solid var(--line);border-top:0;border-radius:0 0 14px 14px}
+.sql-hint{font-size:.74rem;color:var(--muted);margin-right:auto;margin-left:6px}
+kbd{font-family:var(--mono);font-size:.68rem;background:var(--paper);border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;padding:1px 5px}
+.snippets{display:flex;gap:6px;flex-wrap:wrap}
+.chip{appearance:none;font:inherit;font-size:.72rem;font-weight:500;padding:5px 11px;border-radius:999px;border:1px solid var(--line);background:var(--paper);color:var(--ink-2);cursor:pointer;transition:all .2s}
+.chip:hover{border-color:var(--wine);color:var(--wine)}
+.result-area{overflow:auto;padding-top:22px;min-height:0}
+.result-card{border-top:1px solid var(--ink);margin-bottom:22px;animation:rise .4s var(--ease)}
+.result-header{display:flex;align-items:center;gap:10px;padding:10px 0;font-size:.78rem;color:var(--sage)}
+.result-header code{font-family:var(--mono);font-size:.76rem;color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.result-header.error{color:var(--wine)}
+.result-body{overflow-x:auto}
+.result-body .msg{padding:6px 0 10px;font-family:var(--display);font-style:italic;font-size:1.05rem;color:var(--ink-2)}
+.result-body .err{padding:14px 18px;background:var(--wine-soft);color:var(--wine-2);border-radius:10px;font-size:.86rem;line-height:1.5}
+.result-body .count{padding:10px 0;font-size:.74rem;color:var(--muted)}
+.result-body table.data{border-top:1px solid var(--line)}
+.result-body table.data thead th{position:static}
 
-/* ─── SQL Editor ───────────────────────────────────────────────────────── */
-.sql-wrap{display:flex;flex-direction:column;flex:1;overflow:hidden}
-.sql-editor-area{position:relative;flex:1;min-height:160px;max-height:320px}
-textarea.sql-input{width:100%;height:100%;background:var(--bg2);color:#a8ff78;font-family:'Cascadia Code','Fira Code','Consolas',monospace;font-size:.9rem;padding:16px;border:none;outline:none;resize:none;line-height:1.6;border-bottom:2px solid var(--border)}
-textarea.sql-input:focus{border-bottom-color:var(--red)}
-.sql-controls{padding:10px 16px;display:flex;gap:8px;align-items:center;background:var(--bg3);border-bottom:1px solid var(--border);flex-wrap:wrap}
-.sql-hint{font-size:.75rem;color:var(--muted);margin-left:auto}
-kbd{background:var(--bg4);padding:2px 5px;border-radius:3px;font-size:.7rem;border:1px solid var(--border)}
-.result-area{flex:1;overflow:auto;padding:16px}
-.result-card{background:var(--bg3);border-radius:8px;border:1px solid var(--border);margin-bottom:12px;overflow:hidden}
-.result-header{padding:10px 14px;font-size:.78rem;font-weight:600;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border)}
-.result-header.success{background:#1c4532;color:#68d391}
-.result-header.error{background:#742a2a;color:#fc8181}
-.result-body{padding:12px 14px;overflow-x:auto;font-family:monospace;font-size:.82rem}
+/* Schema */
+.schema-wrap{overflow-y:auto;flex:1;padding:0 40px 40px}
+.schema-grid{display:grid;grid-template-columns:1.25fr 1fr;gap:28px;align-items:start}
+.schema-table{width:100%;border-collapse:collapse;border-top:1px solid var(--ink);font-size:.85rem}
+.schema-table th{text-align:left;font-size:.64rem;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);font-weight:600;padding:12px 10px;border-bottom:1px solid var(--line)}
+.schema-table td{padding:12px 10px;border-bottom:1px solid var(--line-2);font-family:var(--mono);font-size:.78rem;color:var(--ink-2);vertical-align:top}
+.schema-table td:first-child{font-family:var(--display);font-size:1rem;color:var(--ink)}
+.key{display:inline-block;font-family:var(--sans);font-size:.6rem;font-weight:700;letter-spacing:.12em;padding:2px 6px;border-radius:4px;margin-left:8px;vertical-align:middle}
+.key.pk{background:var(--wine);color:var(--paper)}
+.key.fk{background:var(--slate-soft);color:var(--slate)}
+.key.uq{background:var(--amber-soft);color:var(--amber)}
+.ddl-box{background:var(--ink);color:#f1e9dc;border-radius:14px;padding:20px 22px;font-family:var(--mono);font-size:.76rem;line-height:1.75;white-space:pre-wrap;word-break:break-word}
+.ddl-box .kw{color:#e2a0a6}
+.panel-label{margin-bottom:12px}
 
-/* ─── Schema panel ─────────────────────────────────────────────────────── */
-.schema-wrap{padding:20px;overflow-y:auto;flex:1}
-.schema-card{background:var(--bg3);border-radius:10px;border:1px solid var(--border);overflow:hidden;margin-bottom:20px}
-.schema-card-head{padding:12px 18px;background:var(--bg4);font-weight:700;font-size:.95rem;display:flex;align-items:center;gap:8px}
-.schema-table{width:100%;border-collapse:collapse}
-.schema-table th{background:#1a1e32;padding:9px 14px;text-align:left;font-size:.72rem;text-transform:uppercase;letter-spacing:.8px;color:var(--accent2)}
-.schema-table td{padding:9px 14px;border-top:1px solid var(--border);font-size:.82rem;font-family:monospace}
-.schema-table tr:hover td{background:var(--bg2)}
-.pk-badge{background:#4a1942;color:#d6bcfa;padding:1px 6px;border-radius:4px;font-size:.68rem;margin-left:4px}
-.fk-badge{background:#1a365d;color:#90cdf4;padding:1px 6px;border-radius:4px;font-size:.68rem;margin-left:4px}
-.ddl-box{background:var(--bg2);border-radius:6px;padding:14px;font-family:monospace;font-size:.8rem;color:#a8ff78;overflow-x:auto;white-space:pre-wrap;word-break:break-all;border:1px solid var(--border);margin:14px 18px}
+/* Modal */
+.modal-bg{position:fixed;inset:0;z-index:50;background:rgba(30,26,23,.42);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .25s}
+.modal-bg.open{opacity:1;pointer-events:auto}
+.modal{width:100%;max-width:520px;max-height:88vh;overflow-y:auto;background:var(--card);border-radius:20px;padding:32px 34px 28px;box-shadow:0 30px 80px -20px rgba(30,26,23,.45);transform:translateY(14px) scale(.98);transition:transform .35s var(--ease)}
+.modal-bg.open .modal{transform:none}
+.modal h2{font-family:var(--display);font-weight:400;font-size:1.7rem;letter-spacing:-.01em;margin:6px 0 22px;text-transform:capitalize}
+.modal h2 em{color:var(--wine)}
+.form-group{margin-bottom:16px}
+.form-group label{display:flex;align-items:baseline;gap:8px;font-size:.72rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-2);margin-bottom:7px}
+.form-group label small{font-family:var(--mono);font-weight:400;letter-spacing:0;text-transform:none;color:var(--muted)}
+.form-group input,.form-group select{width:100%;font:inherit;font-size:.92rem;padding:11px 14px;border-radius:10px;border:1px solid var(--line);background:var(--paper);color:var(--ink);outline:none;transition:border-color .2s,box-shadow .2s}
+.form-group input:focus,.form-group select:focus{border-color:var(--ink);box-shadow:0 0 0 3px var(--paper-2)}
+.modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:26px;padding-top:20px;border-top:1px solid var(--line-2)}
+.delete-info{font-family:var(--mono);font-size:.76rem;background:var(--paper);border:1px solid var(--line-2);border-radius:10px;padding:14px 16px;white-space:pre-wrap;color:var(--ink-2);max-height:220px;overflow:auto}
+.modal p.lead{color:var(--ink-2);line-height:1.6;margin-bottom:16px}
 
-/* ─── Modal ────────────────────────────────────────────────────────────── */
-.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:1000;align-items:center;justify-content:center}
-.modal-bg.open{display:flex}
-.modal{background:var(--bg2);border-radius:12px;border:1px solid var(--border);padding:24px;min-width:420px;max-width:600px;width:90%;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.6)}
-.modal h2{margin-bottom:18px;font-size:1.1rem;display:flex;align-items:center;gap:8px}
-.form-group{margin-bottom:14px}
-.form-group label{display:block;font-size:.78rem;color:var(--muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px}
-.form-group input,.form-group select,.form-group textarea{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:9px 12px;color:var(--text);font-size:.88rem;outline:none;transition:border .15s}
-.form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:var(--red)}
-.form-group select option{background:var(--bg2)}
-.modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:20px}
+/* Toast */
+#toast{position:fixed;bottom:26px;right:26px;z-index:60;display:flex;flex-direction:column;gap:10px}
+.toast-msg{display:flex;align-items:center;gap:10px;background:var(--ink);color:var(--paper);padding:12px 18px;border-radius:999px;font-size:.84rem;box-shadow:0 14px 34px -12px rgba(30,26,23,.5);animation:rise .35s var(--ease)}
+.toast-msg::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--slate-soft)}
+.toast-msg.success::before{background:#9cc3a3}
+.toast-msg.error::before{background:#e2a0a6}
 
-/* ─── Toast ────────────────────────────────────────────────────────────── */
-#toast{position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:8px}
-.toast-msg{padding:12px 18px;border-radius:8px;font-size:.85rem;font-weight:500;animation:fadeIn .2s;max-width:340px;box-shadow:0 4px 16px rgba(0,0,0,.4)}
-.toast-msg.success{background:#1c4532;color:#68d391;border-left:4px solid #68d391}
-.toast-msg.error{background:#742a2a;color:#fc8181;border-left:4px solid #fc8181}
-.toast-msg.info{background:#1a365d;color:#63b3ed;border-left:4px solid #63b3ed}
-@keyframes fadeIn{from{opacity:0;transform:translateX(30px)}to{opacity:1;transform:translateX(0)}}
-
-/* ─── Empty state ──────────────────────────────────────────────────────── */
-.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;gap:12px;color:var(--muted)}
-.empty .emojii{font-size:48px}
-
-/* ─── Loading ──────────────────────────────────────────────────────────── */
-.spinner{display:inline-block;width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
-.loading-row td{text-align:center;padding:24px;color:var(--muted)}
+@media (max-width:1100px){
+  .stock-grid{grid-template-columns:repeat(4,1fr)}
+  .stats{grid-template-columns:1fr 1fr}
+  .stat:nth-child(2){border-right:0}
+  .stat:nth-child(-n+2){border-bottom:1px solid var(--line-2)}
+  .schema-grid,.ledgers{grid-template-columns:1fr}
+}
+@media (max-width:820px){
+  body{overflow:auto}
+  header{grid-template-columns:1fr auto;padding:18px 20px 14px}
+  header::after{left:20px;right:20px}
+  nav.tabs{grid-column:1/-1;grid-row:2;justify-self:start;overflow-x:auto;max-width:100%}
+  .app{grid-template-columns:1fr}
+  .sidebar{border-right:0;border-bottom:1px solid var(--line);padding:16px 0}
+  .table-list{display:flex;overflow-x:auto}
+  .table-item{border-left:0;border-bottom:2px solid transparent;padding:8px 16px;white-space:nowrap}
+  .table-item.active{border-bottom-color:var(--wine)}
+  .sidebar-foot{display:none}
+  .section-head,.pagination{padding-left:20px;padding-right:20px}
+  .table-wrap,.stats,.stock,.ledgers{margin-left:20px;margin-right:20px}
+  .console,.schema-wrap{padding-left:20px;padding-right:20px}
+  .section-head h2{font-size:1.9rem}
+  .search input,.search input:focus{width:100%}
+}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-delay:0ms!important;transition-duration:.01ms!important}}
 </style>
 </head>
 <body>
 
-<!-- ══ HEADER ══════════════════════════════════════════════════════════════ -->
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 11a8 8 0 0 0-14.9-3M4 5v4h4M4 13a8 8 0 0 0 14.9 3M20 19v-4h-4"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4-4"/></symbol>
+  <symbol id="i-edit" viewBox="0 0 24 24"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16v4z"/><path d="m13.5 6.5 4 4"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 5v14l11-7z"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 5 5 9-10"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+  <symbol id="i-grid" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 10h16M10 4v16"/></symbol>
+  <symbol id="i-term" viewBox="0 0 24 24"><path d="m6 9 3 3-3 3M12 15h6"/><rect x="3" y="4" width="18" height="16" rx="2"/></symbol>
+  <symbol id="i-layers" viewBox="0 0 24 24"><path d="m12 4 9 5-9 5-9-5z"/><path d="m3 14 9 5 9-5"/></symbol>
+  <symbol id="i-drop" viewBox="0 0 24 24"><path d="M12 3c4 5.5 7 9 7 12.5a7 7 0 0 1-14 0C5 12 8 8.5 12 3z"/></symbol>
+</svg>
+
 <header>
-  <div class="logo">🏥</div>
-  <h1>Hospital Blood Bank <span>Database Manager — MySQL Live</span></h1>
-  <div class="status-dot" id="statusDot" title="DB Connection"></div>
+  <div class="brand">
+    <div class="brand-mark"><svg viewBox="0 0 32 32"><path d="M16 3c5 7 9 11.5 9 17a9 9 0 0 1-18 0c0-5.5 4-10 9-17z"/></svg></div>
+    <div>
+      <h1>Sanguis <em>Registry</em></h1>
+      <small>Hospital Blood Bank · Records</small>
+    </div>
+  </div>
+  <nav class="tabs" role="tablist">
+    <button class="tab active" data-tab="overview"><svg class="i"><use href="#i-drop"/></svg>Overview</button>
+    <button class="tab" data-tab="data"><svg class="i"><use href="#i-grid"/></svg>Records</button>
+    <button class="tab" data-tab="sql"><svg class="i"><use href="#i-term"/></svg>Console</button>
+    <button class="tab" data-tab="schema"><svg class="i"><use href="#i-layers"/></svg>Schema</button>
+  </nav>
+  <div class="conn"><span id="connLabel">Connecting</span><div class="status-dot pending" id="statusDot"></div></div>
 </header>
 
 <div class="app">
-<!-- ══ SIDEBAR ══════════════════════════════════════════════════════════════ -->
-<aside class="sidebar">
-  <div class="sidebar-title">📋 Tables</div>
-  <div class="table-list" id="tableList"></div>
-</aside>
+  <aside class="sidebar">
+    <div class="eyebrow">The Ledgers</div>
+    <div class="table-list" id="tableList"></div>
+    <div class="sidebar-foot">Select a ledger to browse, amend, or remove its records.</div>
+  </aside>
 
-<!-- ══ MAIN ═════════════════════════════════════════════════════════════════ -->
-<main class="main">
-  <div class="tabs">
-    <div class="tab active" data-tab="data">📊 Data</div>
-    <div class="tab" data-tab="sql">⌨️ SQL Console</div>
-    <div class="tab" data-tab="schema">🗂️ Schema</div>
-  </div>
+  <main class="main">
+    <!-- OVERVIEW -->
+    <section class="panel active" id="panel-overview">
+      <div class="overview" id="overview">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow" id="todayLabel">Today</div>
+            <h2 style="margin-top:10px">The state of <em>supply</em></h2>
+          </div>
+        </div>
+        <div class="empty"><div class="ornament">~</div><span>Gathering figures…</span></div>
+      </div>
+    </section>
 
-  <!-- DATA PANEL -->
-  <div class="panel active" id="panel-data">
-    <div id="noTable" class="empty" style="display:flex"><div class="emojii">👈</div><span>Select a table from the sidebar</span></div>
-    <div id="tableView" style="display:none;flex:1;flex-direction:column;overflow:hidden;display:none">
-      <div class="toolbar">
-        <span id="tableName" style="font-weight:700;color:var(--accent2)">—</span>
-        <input type="search" id="searchInput" placeholder="🔍 Filter rows…" oninput="filterRows()"/>
-        <button class="btn btn-green" onclick="openInsertModal()">➕ Insert Row</button>
-        <button class="btn btn-outline" onclick="refreshTable()">🔄 Refresh</button>
+    <!-- DATA -->
+    <section class="panel" id="panel-data">
+      <div id="noTable" class="empty">
+        <div class="ornament">§</div>
+        <p>Choose a ledger to begin</p>
+        <span>Every table in the registry is listed on the left.</span>
       </div>
-      <div class="table-wrap" id="tableWrap">
-        <table id="dataTable">
-          <thead id="tableHead"></thead>
-          <tbody id="tableBody"></tbody>
-        </table>
+      <div id="tableView" style="display:none;flex:1;flex-direction:column;min-height:0">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Ledger</div>
+            <h2 id="tableName" style="margin-top:10px">—</h2>
+            <div class="meta" id="tableMeta"></div>
+          </div>
+          <div class="toolbar">
+            <label class="search"><svg class="i"><use href="#i-search"/></svg><input type="search" id="searchInput" placeholder="Filter this page" oninput="filterRows()"/></label>
+            <button class="btn btn-ghost" onclick="refreshTable()"><svg class="i"><use href="#i-refresh"/></svg>Refresh</button>
+            <button class="btn btn-primary" onclick="openInsertModal()"><svg class="i"><use href="#i-plus"/></svg>New record</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="data">
+            <thead id="tableHead"></thead>
+            <tbody id="tableBody"></tbody>
+          </table>
+        </div>
+        <div class="pagination" id="pagination"></div>
       </div>
-      <div class="pagination" id="pagination"></div>
-    </div>
-  </div>
+    </section>
 
-  <!-- SQL CONSOLE PANEL -->
-  <div class="panel" id="panel-sql">
-    <div class="sql-wrap">
-      <div class="sql-editor-area">
-        <textarea class="sql-input" id="sqlInput" placeholder="-- Write any SQL here: SELECT, INSERT, UPDATE, DELETE, CREATE, ALTER, DROP…
--- Tip: separate multiple statements with semicolons (;)
-SELECT * FROM donors LIMIT 10;" spellcheck="false"></textarea>
+    <!-- SQL CONSOLE -->
+    <section class="panel" id="panel-sql">
+      <div class="section-head">
+        <div>
+          <div class="eyebrow">PostgreSQL</div>
+          <h2 style="margin-top:10px">The <em>console</em></h2>
+          <div class="meta">Query and modify records directly. Separate statements with a semicolon.</div>
+        </div>
       </div>
-      <div class="sql-controls">
-        <button class="btn btn-red" onclick="runSQL()">▶ Run SQL</button>
-        <button class="btn btn-outline" onclick="clearSQL()">🗑 Clear</button>
-        <div class="sql-hint"><kbd>Ctrl</kbd>+<kbd>Enter</kbd> to run</div>
-        <div style="margin-left:8px;display:flex;gap:6px;flex-wrap:wrap" id="snippets"></div>
+      <div class="console">
+        <div class="editor">
+          <div class="editor-bar"><span class="dots"><i></i><i></i><i></i></span>query.sql</div>
+          <textarea class="sql-input" id="sqlInput" spellcheck="false" placeholder="SELECT * FROM donors LIMIT 10;"></textarea>
+        </div>
+        <div class="sql-controls">
+          <button class="btn btn-primary btn-sm" onclick="runSQL()"><svg class="i"><use href="#i-play"/></svg>Run</button>
+          <button class="btn btn-ghost btn-sm" onclick="clearSQL()">Clear</button>
+          <div class="sql-hint"><kbd>Ctrl</kbd> + <kbd>Enter</kbd> to run</div>
+          <div class="snippets" id="snippets"></div>
+        </div>
+        <div class="result-area" id="resultArea"></div>
       </div>
-      <div class="result-area" id="resultArea">
-        <div class="empty" style="padding:40px 0"><div class="emojii">💻</div><span>Run a query to see results</span></div>
-      </div>
-    </div>
-  </div>
+    </section>
 
-  <!-- SCHEMA PANEL -->
-  <div class="panel" id="panel-schema">
-    <div class="schema-wrap" id="schemaWrap">
-      <div class="empty" style="padding:40px 0"><div class="emojii">🗂️</div><span>Select a table to view its schema</span></div>
-    </div>
-  </div>
-</main>
+    <!-- SCHEMA -->
+    <section class="panel" id="panel-schema">
+      <div class="schema-wrap" id="schemaWrap"></div>
+    </section>
+  </main>
 </div>
 
-<!-- ══ MODALS ════════════════════════════════════════════════════════════════ -->
-<!-- Insert Modal -->
+<!-- Insert -->
 <div class="modal-bg" id="insertModal">
-  <div class="modal">
-    <h2>➕ <span id="insertModalTitle">Insert Row</span></h2>
+  <div class="modal" role="dialog" aria-modal="true">
+    <div class="eyebrow">New record</div>
+    <h2 id="insertModalTitle">Insert</h2>
     <div id="insertForm"></div>
     <div class="modal-actions">
-      <button class="btn btn-outline" onclick="closeModal('insertModal')">Cancel</button>
-      <button class="btn btn-green" onclick="submitInsert()">Insert</button>
+      <button class="btn btn-ghost" onclick="closeModal('insertModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="submitInsert()"><svg class="i"><use href="#i-check"/></svg>Save record</button>
     </div>
   </div>
 </div>
 
-<!-- Edit Modal -->
+<!-- Edit -->
 <div class="modal-bg" id="editModal">
-  <div class="modal">
-    <h2>✏️ <span id="editModalTitle">Edit Row</span></h2>
+  <div class="modal" role="dialog" aria-modal="true">
+    <div class="eyebrow">Amend record</div>
+    <h2 id="editModalTitle">Edit</h2>
     <div id="editForm"></div>
     <div class="modal-actions">
-      <button class="btn btn-outline" onclick="closeModal('editModal')">Cancel</button>
-      <button class="btn btn-blue" onclick="submitEdit()">Save Changes</button>
+      <button class="btn btn-ghost" onclick="closeModal('editModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="submitEdit()"><svg class="i"><use href="#i-check"/></svg>Save changes</button>
     </div>
   </div>
 </div>
 
-<!-- Delete Confirm Modal -->
+<!-- Delete -->
 <div class="modal-bg" id="deleteModal">
-  <div class="modal" style="max-width:400px">
-    <h2>🗑️ Delete Row</h2>
-    <p style="color:var(--muted);margin-bottom:18px">Are you sure you want to delete this row? This action <strong style="color:var(--accent)">cannot be undone</strong>.</p>
-    <div id="deleteInfo" style="background:var(--bg);border-radius:6px;padding:10px 14px;font-family:monospace;font-size:.82rem;margin-bottom:18px;border:1px solid var(--border)"></div>
+  <div class="modal" role="dialog" aria-modal="true" style="max-width:440px">
+    <div class="eyebrow" style="color:var(--wine)">Remove record</div>
+    <h2>Are you <em>certain?</em></h2>
+    <p class="lead">This record will be permanently removed from the registry. This cannot be undone.</p>
+    <div class="delete-info" id="deleteInfo"></div>
     <div class="modal-actions">
-      <button class="btn btn-outline" onclick="closeModal('deleteModal')">Cancel</button>
-      <button class="btn btn-red" onclick="submitDelete()">Delete</button>
+      <button class="btn btn-ghost" onclick="closeModal('deleteModal')">Keep it</button>
+      <button class="btn btn-primary" onclick="submitDelete()"><svg class="i"><use href="#i-trash"/></svg>Delete</button>
     </div>
   </div>
 </div>
 
-<!-- Toast container -->
 <div id="toast"></div>
 
 <script>
-// ═══════════════════════════════════════════════════════════════════════════
-//  STATE
-// ═══════════════════════════════════════════════════════════════════════════
-const API = 'http://localhost:3000/api';
-let state = {
-  tables: [],
-  activeTable: null,
-  columns: [],
-  allRows: [],      // all rows fetched (client-side filter)
-  page: 1,
-  limit: 50,
-  total: 0,
-  pkColumn: null,
-  editRow: null,
-  deleteRow: null,
+const API = '/api';
+const BLOOD_GROUPS = ['O-','O+','A-','A+','B-','B+','AB-','AB+'];
+const state = {
+  tables: [], activeTable: null, columns: [], allRows: [], viewRows: [],
+  page: 1, limit: 50, total: 0, pkColumn: null, editRow: null, deleteRow: null,
 };
 
-// ═══════════════════════════════════════════════════════════════════════════
-//  INIT
-// ═══════════════════════════════════════════════════════════════════════════
+const $ = (id) => document.getElementById(id);
+const icon = (name) => `<svg class="i"><use href="#i-${name}"/></svg>`;
+const escHtml = (s) => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const humanize = (s) => String(s).replace(/_/g, ' ');
+
+async function api(path, opts = {}) {
+  const r = await fetch(API + path, {
+    ...opts,
+    headers: opts.body ? { 'Content-Type': 'application/json' } : undefined,
+  });
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok && !('success' in d)) throw new Error(d.error || `Request failed (${r.status})`);
+  return d;
+}
+
 document.addEventListener('DOMContentLoaded', () => {
+  $('todayLabel').textContent = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
   checkConnection();
   loadTables();
+  loadOverview();
   setupSQLEditor();
   setupSnippets();
-  setInterval(checkConnection, 8000);
+  clearSQL();
+  renderSchemaEmpty();
+  setInterval(checkConnection, 15000);
 });
 
 async function checkConnection() {
+  const dot = $('statusDot'), label = $('connLabel');
   try {
-    const r = await fetch(`${API}/ping`);
-    const d = await r.json();
-    document.getElementById('statusDot').className = 'status-dot' + (d.ok ? '' : ' offline');
-  } catch { document.getElementById('statusDot').className = 'status-dot offline'; }
+    const d = await api('/ping');
+    dot.className = 'status-dot' + (d.ok ? '' : ' offline');
+    label.textContent = d.ok ? 'Connected' : 'Offline';
+  } catch { dot.className = 'status-dot offline'; label.textContent = 'Offline'; }
 }
 
+// ─── Sidebar ────────────────────────────────────────────────────────────
 async function loadTables() {
-  const list = document.getElementById('tableList');
-  list.innerHTML = '<div style="padding:14px;color:var(--muted);font-size:.82rem"><span class="spinner"></span> Loading…</div>';
+  const list = $('tableList');
+  if (!state.tables.length) list.innerHTML = Array.from({ length: 6 }, () =>
+    `<div class="table-item skeleton" style="opacity:1;animation:none"><span></span><span style="height:10px;border-radius:4px;background:var(--paper-2)"></span><span></span></div>`).join('');
   try {
-    const r = await fetch(`${API}/tables`);
-    state.tables = await r.json();
+    state.tables = await api('/tables');
     renderTableList();
-  } catch (e) { toast('Cannot reach server – is it running?', 'error'); }
+  } catch (e) {
+    list.innerHTML = `<div class="sidebar-foot" style="border:0;margin:0">Unable to reach the registry. ${escHtml(e.message)}</div>`;
+  }
 }
 
 function renderTableList() {
-  const icons = {donors:'🩸',donations:'💉',blood_units:'🧪',hospitals:'🏥',requests:'📋',issues:'📤',blood_compatibility:'🔗'};
-  const list = document.getElementById('tableList');
-  list.innerHTML = state.tables.map(t => `
-    <div class="table-item ${t===state.activeTable?'active':''}" onclick="selectTable('${t}')">
-      <span class="ticon">${icons[t]||'📄'}</span>${t}
-      <span class="table-count" id="cnt-${t}">…</span>
+  $('tableList').innerHTML = state.tables.map((t, i) => `
+    <div class="table-item ${t === state.activeTable ? 'active' : ''}" tabindex="0" style="animation-delay:${i * 45}ms"
+         onclick="selectTable('${t}')" onkeydown="if(event.key==='Enter')selectTable('${t}')">
+      <span class="num">${String(i + 1).padStart(2, '0')}</span>
+      <span class="tname">${humanize(t)}</span>
+      <span class="table-count" id="cnt-${t}">·</span>
     </div>`).join('');
-  state.tables.forEach(t => fetchCount(t));
+  state.tables.forEach(fetchCount);
 }
 
 async function fetchCount(t) {
   try {
-    const r = await fetch(`${API}/table/${t}?limit=1`);
-    const d = await r.json();
-    const el = document.getElementById(`cnt-${t}`);
+    const d = await api(`/table/${t}?limit=1`);
+    const el = $(`cnt-${t}`);
     if (el) el.textContent = d.total;
   } catch {}
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-//  TABLE SELECT & DATA
-// ═══════════════════════════════════════════════════════════════════════════
+// ─── Overview ───────────────────────────────────────────────────────────
+async function loadOverview() {
+  const wrap = $('overview');
+  const head = wrap.querySelector('.section-head').outerHTML;
+  try {
+    const d = await api('/overview');
+    const stock = Object.fromEntries(d.stock.map(s => [s.blood_group, s.units]));
+    const max = Math.max(4, ...Object.values(stock));
+    const t = d.totals;
+    const stats = [
+      ['Units available', t.available, 'units'],
+      ['Registered donors', t.donors, ''],
+      ['Partner hospitals', t.hospitals, ''],
+      ['Volume collected', (t.volume / 1000).toFixed(2), 'litres'],
+    ];
+    wrap.innerHTML = head + `
+      <div class="stats">${stats.map(([l, v, u], i) => `
+        <div class="stat" style="animation-delay:${i * 80}ms"><div class="eyebrow">${l}</div><div class="v">${v}${u ? `<small>${u}</small>` : ''}</div></div>`).join('')}
+      </div>
+      <div class="stock">
+        <div class="eyebrow">Available stock by blood group</div>
+        <div class="stock-grid">${BLOOD_GROUPS.map((g, i) => {
+          const n = stock[g] || 0;
+          return `<div class="vial ${n <= 1 ? 'low' : ''}" style="animation-delay:${200 + i * 60}ms">
+            <div class="tube"><div class="fill" style="--lvl:${(n / max).toFixed(3)};animation-delay:${450 + i * 60}ms"></div></div>
+            <div class="g">${g}</div><div class="u">${n} ${n === 1 ? 'unit' : 'units'}</div></div>`;
+        }).join('')}</div>
+      </div>
+      <div class="ledgers">
+        <div class="ledger">
+          <div class="eyebrow">Awaiting fulfilment</div>
+          <h3>Pending <em>requests</em></h3>
+          <ul>${d.pending.length ? d.pending.map(r => `
+            <li><span class="group">${r.blood_group}</span>
+              <div><div>${escHtml(r.hospital)}</div><div class="sub">Request #${r.request_id} · ${r.units_needed} ${r.units_needed === 1 ? 'unit' : 'units'}</div></div>
+              <span class="right">${fmtDate(r.request_date)}</span></li>`).join('')
+            : '<li class="none">No outstanding requests.</li>'}</ul>
+        </div>
+        <div class="ledger">
+          <div class="eyebrow">Use first</div>
+          <h3>Nearest <em>expiry</em></h3>
+          <ul>${d.expiring.length ? d.expiring.map(u => `
+            <li><span class="group">${u.blood_group}</span>
+              <div><div>Unit #${u.unit_id}</div><div class="sub">Expires ${fmtDate(u.expiry_date)}</div></div>
+              <span class="right ${u.days_left <= 7 ? 'urgent' : ''}">${u.days_left} ${u.days_left === 1 ? 'day' : 'days'}</span></li>`).join('')
+            : '<li class="none">No units in stock.</li>'}</ul>
+        </div>
+      </div>`;
+  } catch (e) {
+    wrap.innerHTML = head + `<div class="empty"><div class="ornament">!</div><p>The figures are unavailable</p><span>${escHtml(e.message)}</span></div>`;
+  }
+}
+
+function fmtDate(s) {
+  if (!s) return '';
+  const [y, m, d] = String(s).slice(0, 10).split('-').map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+// ─── Records ────────────────────────────────────────────────────────────
 async function selectTable(name) {
   state.activeTable = name;
   state.page = 1;
+  $('searchInput').value = '';
   renderTableList();
-  document.getElementById('noTable').style.display = 'none';
-  const tv = document.getElementById('tableView');
-  tv.style.display = 'flex';
-  document.getElementById('tableName').textContent = name;
-  // If schema tab is visible, refresh it
-  if (document.getElementById('panel-schema').classList.contains('active')) loadSchema(name);
+  $('noTable').style.display = 'none';
+  $('tableView').style.display = 'flex';
+  $('tableName').innerHTML = humanize(name);
+  const activeTab = document.querySelector('.tab.active').dataset.tab;
+  if (activeTab === 'schema') loadSchema(name);
+  else if (activeTab !== 'data') switchTab('data');
   await loadTableData();
 }
 
 async function loadTableData() {
   const name = state.activeTable;
   if (!name) return;
-  const body = document.getElementById('tableBody');
-  body.innerHTML = `<tr class="loading-row"><td colspan="99"><span class="spinner"></span> Loading…</td></tr>`;
+  const cols = state.columns.length || 5;
+  $('tableBody').innerHTML = Array.from({ length: 6 }, () =>
+    `<tr class="skeleton">${Array.from({ length: cols }, () => '<td><span></span></td>').join('')}</tr>`).join('');
   try {
-    const r = await fetch(`${API}/table/${name}?page=${state.page}&limit=${state.limit}`);
-    const d = await r.json();
+    const d = await api(`/table/${name}?page=${state.page}&limit=${state.limit}`);
     state.columns = d.columns;
     state.allRows = d.rows;
     state.total = d.total;
-    // Detect PK column
     const pk = d.columns.find(c => c.Key === 'PRI');
     state.pkColumn = pk ? pk.Field : d.columns[0]?.Field;
+    $('tableMeta').textContent = `${d.total} ${d.total === 1 ? 'record' : 'records'} · ${d.columns.length} fields`;
     renderTableHead(d.columns);
     renderTableBody(d.rows);
     renderPagination();
     fetchCount(name);
-  } catch (e) { toast('Error loading table: ' + e.message, 'error'); }
+  } catch (e) { toast('Could not load ledger: ' + e.message, 'error'); }
 }
 
 function renderTableHead(cols) {
-  document.getElementById('tableHead').innerHTML =
-    '<tr>' + cols.map(c => `<th>${c.Field}</th>`).join('') + '<th style="text-align:right">Actions</th></tr>';
+  $('tableHead').innerHTML = '<tr>' + cols.map(c => `<th>${humanize(c.Field)}</th>`).join('') + '<th></th></tr>';
 }
 
 function renderTableBody(rows) {
-  const body = document.getElementById('tableBody');
-  if (!rows.length) { body.innerHTML = '<tr><td colspan="99" style="text-align:center;padding:24px;color:var(--muted)">No rows found</td></tr>'; return; }
-  body.innerHTML = rows.map(row => {
+  state.viewRows = rows;
+  const body = $('tableBody');
+  if (!rows.length) {
+    body.innerHTML = `<tr><td colspan="99"><div class="empty" style="padding:50px 0"><div class="ornament">∅</div><p>${state.allRows.length ? 'Nothing matches that filter' : 'This ledger is empty'}</p><span>${state.allRows.length ? 'Try a different term.' : 'Add the first record to get started.'}</span></div></td></tr>`;
+    return;
+  }
+  body.innerHTML = rows.map((row, i) => {
     const cells = state.columns.map(c => {
       const v = row[c.Field];
-      return `<td title="${v ?? ''}">${formatCell(c.Field, v)}</td>`;
+      const numeric = typeof v === 'number';
+      return `<td class="${numeric ? 'num-cell' : ''}" title="${escHtml(v ?? '')}">${formatCell(c.Field, v)}</td>`;
     }).join('');
-    const pk = row[state.pkColumn];
-    return `<tr>${cells}<td><div class="action-cell">
-      <button class="btn btn-blue btn-icon" onclick="openEditModal(${JSON.stringify(JSON.stringify(row)).slice(1,-1)})">✏️</button>
-      <button class="btn btn-red btn-icon" onclick="openDeleteModal(${JSON.stringify(JSON.stringify(row)).slice(1,-1)})">🗑</button>
+    return `<tr>${cells}<td class="actions"><div class="wrap">
+      <button class="icon-btn" title="Edit" onclick="openEditModal(${i})">${icon('edit')}</button>
+      <button class="icon-btn danger" title="Delete" onclick="openDeleteModal(${i})">${icon('trash')}</button>
     </div></td></tr>`;
   }).join('');
 }
 
 function formatCell(field, v) {
-  if (v === null || v === undefined) return '<span class="null-val">NULL</span>';
+  if (v === null || v === undefined) return '<span class="null-val">none</span>';
   if (field === 'status') {
-    const map = {Available:'green',Issued:'blue',Expired:'red',Pending:'yellow',Fulfilled:'green'};
-    const cls = map[v] || 'blue';
-    return `<span class="badge badge-${cls}">${v}</span>`;
+    const map = { Available: 'green', Issued: 'blue', Expired: 'red', Pending: 'yellow', Fulfilled: 'green' };
+    return `<span class="badge badge-${map[v] || 'blue'}">${escHtml(v)}</span>`;
   }
-  if (typeof v === 'string' && v.match(/^\d{4}-\d{2}-\d{2}T/)) return v.slice(0,10);
-  if (v instanceof Date) return v.toISOString().slice(0,10);
-  return String(v);
+  if (/blood_group|donor_group|recipient_group/.test(field) && BLOOD_GROUPS.includes(v)) return `<span class="group">${v}</span>`;
+  if (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v)) return fmtDate(v);
+  if (typeof v === 'object') return escHtml(JSON.stringify(v));
+  return escHtml(v);
 }
 
 function filterRows() {
-  const q = document.getElementById('searchInput').value.toLowerCase();
-  if (!q) { renderTableBody(state.allRows); return; }
-  const filtered = state.allRows.filter(row =>
-    Object.values(row).some(v => String(v ?? '').toLowerCase().includes(q))
-  );
-  renderTableBody(filtered);
+  const q = $('searchInput').value.toLowerCase();
+  renderTableBody(!q ? state.allRows : state.allRows.filter(row =>
+    Object.values(row).some(v => String(v ?? '').toLowerCase().includes(q))));
 }
 
 function renderPagination() {
-  const pages = Math.ceil(state.total / state.limit);
-  document.getElementById('pagination').innerHTML = `
-    <button class="pg-btn" onclick="changePage(${state.page-1})" ${state.page<=1?'disabled':''}>◀ Prev</button>
-    <span>Page <strong>${state.page}</strong> of <strong>${pages}</strong> — <strong>${state.total}</strong> total rows</span>
-    <button class="pg-btn" onclick="changePage(${state.page+1})" ${state.page>=pages?'disabled':''}>Next ▶</button>`;
+  const pages = Math.max(1, Math.ceil(state.total / state.limit));
+  $('pagination').innerHTML = `
+    <span>Page <strong>${state.page}</strong> of <strong>${pages}</strong></span>
+    <div class="pg">
+      <button class="btn btn-ghost btn-sm" onclick="changePage(${state.page - 1})" ${state.page <= 1 ? 'disabled style="opacity:.35;pointer-events:none"' : ''}>Previous</button>
+      <button class="btn btn-ghost btn-sm" onclick="changePage(${state.page + 1})" ${state.page >= pages ? 'disabled style="opacity:.35;pointer-events:none"' : ''}>Next</button>
+    </div>`;
 }
 
 function changePage(p) { state.page = p; loadTableData(); }
-function refreshTable() { loadTableData(); toast('Table refreshed', 'info'); }
+function refreshTable() { loadTableData(); toast('Ledger refreshed', 'info'); }
 
-// ═══════════════════════════════════════════════════════════════════════════
-//  INSERT MODAL
-// ═══════════════════════════════════════════════════════════════════════════
+// ─── Insert / edit / delete ─────────────────────────────────────────────
+function buildField(c, val = '') {
+  const pk = c.Key === 'PRI' ? '<span class="key pk">PK</span>' : '';
+  const label = `<label>${humanize(c.Field)} <small>${escHtml(c.Type)}</small>${pk}</label>`;
+  const name = `data-${c.Field}`;
+  const optional = c.Null === 'YES' ? 'Optional' : '';
+  const v = escHtml(val ?? '');
+  if (c.Type.startsWith('enum')) {
+    const opts = (c.Type.match(/'([^']+)'/g) || []).map(o => o.replace(/'/g, ''));
+    return `<div class="form-group">${label}<select name="${name}">${c.Null === 'YES' ? '<option value="">—</option>' : ''}${opts.map(o => `<option ${o === val ? 'selected' : ''}>${escHtml(o)}</option>`).join('')}</select></div>`;
+  }
+  if (c.Type === 'date') return `<div class="form-group">${label}<input type="date" name="${name}" value="${v ? String(val).slice(0, 10) : ''}"/></div>`;
+  if (/int|numeric|double|real/.test(c.Type)) return `<div class="form-group">${label}<input type="number" name="${name}" value="${v}" placeholder="${optional}"/></div>`;
+  return `<div class="form-group">${label}<input type="text" name="${name}" value="${v}" placeholder="${optional}"/></div>`;
+}
+
+function collect(formId, emptyAsNull) {
+  const data = {};
+  document.querySelectorAll(`#${formId} [name^="data-"]`).forEach(el => {
+    const k = el.name.replace('data-', '');
+    const v = el.value.trim();
+    if (v !== '') data[k] = v;
+    else if (emptyAsNull) data[k] = null;
+  });
+  return data;
+}
+
 function openInsertModal() {
-  if (!state.activeTable) return toast('Select a table first', 'info');
-  document.getElementById('insertModalTitle').textContent = `Insert into ${state.activeTable}`;
-  const form = document.getElementById('insertForm');
-  form.innerHTML = state.columns.filter(c => c.Extra !== 'auto_increment').map(c => buildField(c)).join('');
+  if (!state.activeTable) return toast('Choose a ledger first', 'info');
+  $('insertModalTitle').innerHTML = `Add to <em>${humanize(state.activeTable)}</em>`;
+  $('insertForm').innerHTML = state.columns.filter(c => c.Extra !== 'auto_increment').map(c => buildField(c)).join('');
   openModal('insertModal');
 }
 
-function buildField(c, val='') {
-  const label = `${c.Field} <small style="color:var(--muted)">${c.Type}</small>${c.Key==='PRI'?'<span class="pk-badge">PK</span>':''}`;
-  const name = `data-${c.Field}`;
-  // ENUM
-  if (c.Type.startsWith('enum')) {
-    const opts = c.Type.match(/'([^']+)'/g).map(o => o.replace(/'/g,''));
-    return `<div class="form-group"><label>${label}</label>
-      <select name="${name}">${opts.map(o=>`<option ${o===val?'selected':''}>${o}</option>`).join('')}</select></div>`;
-  }
-  // DATE
-  if (c.Type === 'date') return `<div class="form-group"><label>${label}</label><input type="date" name="${name}" value="${val}"/></div>`;
-  // INT
-  if (c.Type.includes('int')) return `<div class="form-group"><label>${label}</label><input type="number" name="${name}" value="${val}" placeholder="${c.Null==='YES'?'NULL (optional)':''}"/></div>`;
-  return `<div class="form-group"><label>${label}</label><input type="text" name="${name}" value="${val}" placeholder="${c.Null==='YES'?'NULL (optional)':''}"/></div>`;
-}
-
 async function submitInsert() {
-  const inputs = document.querySelectorAll('#insertForm [name^="data-"]');
-  const data = {};
-  inputs.forEach(el => {
-    const k = el.name.replace('data-','');
-    const v = el.value.trim();
-    if (v !== '') data[k] = v;
-  });
   try {
-    const r = await fetch(`${API}/table/${state.activeTable}/row`, {
-      method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(data)
-    });
-    const d = await r.json();
-    if (!r.ok) throw new Error(d.error);
-    toast(`✅ Row inserted (ID: ${d.insertId})`, 'success');
+    const d = await api(`/table/${state.activeTable}/row`, { method: 'POST', body: JSON.stringify(collect('insertForm', false)) });
+    toast(`Record saved${d.insertId != null ? ` · #${d.insertId}` : ''}`, 'success');
     closeModal('insertModal');
-    loadTableData();
-  } catch(e) { toast('Insert failed: ' + e.message, 'error'); }
+    loadTableData(); loadOverview();
+  } catch (e) { toast('Could not save: ' + e.message, 'error'); }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-//  EDIT MODAL
-// ═══════════════════════════════════════════════════════════════════════════
-function openEditModal(rowJson) {
-  const row = JSON.parse(rowJson);
+function openEditModal(i) {
+  const row = state.viewRows[i];
   state.editRow = row;
-  document.getElementById('editModalTitle').textContent = `Edit ${state.activeTable}`;
-  const form = document.getElementById('editForm');
-  form.innerHTML = state.columns.map(c => buildField(c, row[c.Field] ?? '')).join('');
+  $('editModalTitle').innerHTML = `${humanize(state.activeTable)} <em>#${escHtml(row[state.pkColumn])}</em>`;
+  $('editForm').innerHTML = state.columns.map(c => buildField(c, row[c.Field] ?? '')).join('');
   openModal('editModal');
 }
 
 async function submitEdit() {
-  const inputs = document.querySelectorAll('#editForm [name^="data-"]');
-  const data = {};
-  inputs.forEach(el => {
-    const k = el.name.replace('data-','');
-    const v = el.value.trim();
-    data[k] = v === '' ? null : v;
-  });
   try {
-    const r = await fetch(`${API}/table/${state.activeTable}/row`, {
-      method:'PUT', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ pkColumn: state.pkColumn, pkValue: state.editRow[state.pkColumn], data })
+    const d = await api(`/table/${state.activeTable}/row`, {
+      method: 'PUT',
+      body: JSON.stringify({ pkColumn: state.pkColumn, pkValue: state.editRow[state.pkColumn], data: collect('editForm', true) }),
     });
-    const d = await r.json();
-    if (!r.ok) throw new Error(d.error);
-    toast(`✅ Row updated (${d.affectedRows} affected)`, 'success');
+    toast(`Changes saved · ${d.affectedRows} updated`, 'success');
     closeModal('editModal');
-    loadTableData();
-  } catch(e) { toast('Update failed: ' + e.message, 'error'); }
+    loadTableData(); loadOverview();
+  } catch (e) { toast('Could not update: ' + e.message, 'error'); }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-//  DELETE MODAL
-// ═══════════════════════════════════════════════════════════════════════════
-function openDeleteModal(rowJson) {
-  const row = JSON.parse(rowJson);
-  state.deleteRow = row;
-  document.getElementById('deleteInfo').textContent = JSON.stringify(row, null, 2);
+function openDeleteModal(i) {
+  state.deleteRow = state.viewRows[i];
+  $('deleteInfo').textContent = Object.entries(state.deleteRow).map(([k, v]) => `${k.padEnd(20)} ${v ?? '—'}`).join('\n');
   openModal('deleteModal');
 }
 
 async function submitDelete() {
   try {
-    const r = await fetch(`${API}/table/${state.activeTable}/row`, {
-      method:'DELETE', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ pkColumn: state.pkColumn, pkValue: state.deleteRow[state.pkColumn] })
+    const d = await api(`/table/${state.activeTable}/row`, {
+      method: 'DELETE',
+      body: JSON.stringify({ pkColumn: state.pkColumn, pkValue: state.deleteRow[state.pkColumn] }),
     });
-    const d = await r.json();
-    if (!r.ok) throw new Error(d.error);
-    toast(`🗑️ Row deleted (${d.affectedRows} affected)`, 'success');
+    toast(`Record removed · ${d.affectedRows} deleted`, 'success');
     closeModal('deleteModal');
-    loadTableData();
-  } catch(e) { toast('Delete failed: ' + e.message, 'error'); }
+    loadTableData(); loadOverview();
+  } catch (e) { toast('Could not delete: ' + e.message, 'error'); }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-//  SQL CONSOLE
-// ═══════════════════════════════════════════════════════════════════════════
+// ─── Console ────────────────────────────────────────────────────────────
 function setupSQLEditor() {
-  document.getElementById('sqlInput').addEventListener('keydown', e => {
-    if (e.ctrlKey && e.key === 'Enter') { e.preventDefault(); runSQL(); }
+  $('sqlInput').addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); runSQL(); }
     if (e.key === 'Tab') { e.preventDefault(); insertAtCursor(e.target, '  '); }
   });
 }
 
 function setupSnippets() {
   const snips = [
-    ['SELECT *', `SELECT * FROM donors LIMIT 20;`],
-    ['DESCRIBE', `DESCRIBE donors;`],
-    ['SHOW TABLES', `SHOW TABLES;`],
-    ['CREATE TABLE', `CREATE TABLE example (\n  id INT AUTO_INCREMENT PRIMARY KEY,\n  name VARCHAR(100) NOT NULL\n);`],
-    ['ALTER TABLE', `ALTER TABLE donors ADD COLUMN email VARCHAR(100);`],
-    ['DROP TABLE', `DROP TABLE IF EXISTS example;`],
-    ['JOIN Example', `SELECT d.name, dn.donation_date, b.blood_group, b.status\nFROM donors d\nJOIN donations dn ON d.donor_id = dn.donor_id\nJOIN blood_units b ON dn.donation_id = b.donation_id\nLIMIT 20;`],
+    ['Donors', `SELECT * FROM donors ORDER BY name LIMIT 20;`],
+    ['Stock by group', `SELECT blood_group, COUNT(*) AS units\nFROM blood_units\nWHERE status = 'Available'\nGROUP BY blood_group\nORDER BY blood_group;`],
+    ['Donation trail', `SELECT d.name, dn.donation_date, b.blood_group, b.status\nFROM donors d\nJOIN donations dn ON d.donor_id = dn.donor_id\nJOIN blood_units b ON dn.donation_id = b.donation_id\nORDER BY dn.donation_date DESC;`],
+    ['Compatible donors', `SELECT d.name, d.blood_group, d.city\nFROM donors d\nJOIN blood_compatibility c ON c.donor_group = d.blood_group\nWHERE c.recipient_group = 'AB+';`],
+    ['Expire stale units', `UPDATE blood_units SET status = 'Expired'\nWHERE status = 'Available' AND expiry_date < CURRENT_DATE;`],
   ];
-  const el = document.getElementById('snippets');
-  el.innerHTML = snips.map(([label, sql]) =>
-    `<button class="btn btn-outline" style="font-size:.72rem;padding:4px 10px" onclick='loadSnippet(${JSON.stringify(sql)})'>${label}</button>`
-  ).join('');
+  window.__snips = snips;
+  $('snippets').innerHTML = snips.map(([label], i) => `<button class="chip" onclick="loadSnippet(${i})">${label}</button>`).join('');
 }
 
-function loadSnippet(sql) { document.getElementById('sqlInput').value = sql; }
-function clearSQL() { document.getElementById('sqlInput').value = ''; document.getElementById('resultArea').innerHTML = '<div class="empty" style="padding:40px 0"><div class="emojii">💻</div><span>Run a query to see results</span></div>'; }
+function loadSnippet(i) { $('sqlInput').value = window.__snips[i][1]; $('sqlInput').focus(); }
+function clearSQL() {
+  $('sqlInput').value = '';
+  $('resultArea').innerHTML = '<div class="empty" style="padding:40px 0"><div class="ornament">;</div><p>Results appear here</p><span>Write a query above, or start from one of the examples.</span></div>';
+}
 
 async function runSQL() {
-  const sql = document.getElementById('sqlInput').value.trim();
+  const sql = $('sqlInput').value.trim();
   if (!sql) return;
-  const area = document.getElementById('resultArea');
-  area.innerHTML = '<div class="empty" style="padding:40px 0"><span class="spinner"></span></div>';
+  const area = $('resultArea');
+  area.innerHTML = '<div class="empty" style="padding:40px 0"><div class="ornament">~</div><span>Running…</span></div>';
   try {
-    const r = await fetch(`${API}/query`, {
-      method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({sql})
-    });
-    const d = await r.json();
-    if (!d.success) { area.innerHTML = renderError(d.error, sql); return; }
-    area.innerHTML = d.results.map(res => renderResult(res)).join('');
-    // Refresh sidebar counts & active table
-    loadTables();
+    const d = await api('/query', { method: 'POST', body: JSON.stringify({ sql }) });
+    if (!d.success) { area.innerHTML = renderError(d.error); return; }
+    area.innerHTML = d.results.map(renderResult).join('');
+    loadTables(); loadOverview();
     if (state.activeTable) loadTableData();
-  } catch(e) { area.innerHTML = renderError(e.message, sql); }
+  } catch (e) { area.innerHTML = renderError(e.message); }
 }
 
 function renderResult(res) {
-  let body = '';
+  let body;
   if (res.rows && res.rows.length) {
     const cols = Object.keys(res.rows[0]);
-    body = `<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:.8rem">
-      <thead><tr>${cols.map(c=>`<th style="padding:7px 12px;background:#1a1e32;text-align:left;color:var(--accent2);white-space:nowrap">${c}</th>`).join('')}</tr></thead>
-      <tbody>${res.rows.map(row=>`<tr style="border-bottom:1px solid var(--border)">${cols.map(c=>`<td style="padding:6px 12px;font-family:monospace">${formatCell(c,row[c])}</td>`).join('')}</tr>`).join('')}</tbody>
-    </table></div><div style="padding:8px 12px;font-size:.75rem;color:var(--muted)">${res.rows.length} rows returned</div>`;
+    body = `<table class="data"><thead><tr>${cols.map(c => `<th>${escHtml(humanize(c))}</th>`).join('')}</tr></thead>
+      <tbody>${res.rows.map(row => `<tr>${cols.map(c => `<td class="${typeof row[c] === 'number' ? 'num-cell' : ''}">${formatCell(c, row[c])}</td>`).join('')}</tr>`).join('')}</tbody></table>
+      <div class="count">${res.rows.length} ${res.rows.length === 1 ? 'row' : 'rows'} returned</div>`;
+  } else if (res.rows) {
+    body = '<div class="msg">The query returned no rows.</div>';
   } else {
-    const info = [];
-    if (res.affectedRows !== null) info.push(`${res.affectedRows} row(s) affected`);
-    if (res.insertId) info.push(`Insert ID: ${res.insertId}`);
-    body = `<div style="padding:12px 14px;color:var(--green)">${info.join(' · ') || 'Query executed successfully'}</div>`;
+    body = `<div class="msg">${res.command ? res.command.charAt(0) + res.command.slice(1).toLowerCase() : 'Done'} — ${res.affectedRows ?? 0} ${res.affectedRows === 1 ? 'row' : 'rows'} affected.</div>`;
   }
-  return `<div class="result-card"><div class="result-header success">✅ <code style="font-size:.78rem">${escHtml(res.statement)}${res.statement.length>=120?'…':''}</code></div><div class="result-body">${body}</div></div>`;
+  return `<div class="result-card"><div class="result-header">${icon('check')}<code>${escHtml(res.statement)}${res.statement.length >= 120 ? '…' : ''}</code></div><div class="result-body">${body}</div></div>`;
 }
 
-function renderError(msg, sql) {
-  return `<div class="result-card"><div class="result-header error">❌ Error</div><div class="result-body" style="color:var(--accent)">${escHtml(msg)}</div></div>`;
+function renderError(msg) {
+  return `<div class="result-card" style="border-top-color:var(--wine)"><div class="result-header error">${icon('x')}Query failed</div><div class="result-body"><div class="err">${escHtml(msg)}</div></div></div>`;
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-//  SCHEMA PANEL
-// ═══════════════════════════════════════════════════════════════════════════
+// ─── Schema ─────────────────────────────────────────────────────────────
+function renderSchemaEmpty() {
+  $('schemaWrap').innerHTML = '<div class="empty" style="min-height:60vh"><div class="ornament">¶</div><p>Choose a ledger to read its structure</p><span>Fields, keys and the full table definition are shown here.</span></div>';
+}
+
 async function loadSchema(tableName) {
-  const wrap = document.getElementById('schemaWrap');
-  wrap.innerHTML = '<div class="empty" style="padding:40px 0"><span class="spinner"></span></div>';
+  const wrap = $('schemaWrap');
+  wrap.innerHTML = '<div class="empty" style="min-height:60vh"><div class="ornament">~</div><span>Reading structure…</span></div>';
   try {
-    const [colsR, ddlR] = await Promise.all([
-      fetch(`${API}/table/${tableName}/columns`).then(r=>r.json()),
-      fetch(`${API}/table/${tableName}/schema`).then(r=>r.json()),
-    ]);
-    const cols = colsR;
-    const ddl = ddlR.schema;
+    const [cols, ddl] = await Promise.all([api(`/table/${tableName}/columns`), api(`/table/${tableName}/schema`)]);
+    const keyBadge = (k) => k === 'PRI' ? '<span class="key pk">PK</span>' : k === 'MUL' ? '<span class="key fk">FK</span>' : k === 'UNI' ? '<span class="key uq">UQ</span>' : '';
+    const ddlHtml = escHtml(ddl.schema).replace(/\b(CREATE TABLE|PRIMARY KEY|FOREIGN KEY|REFERENCES|UNIQUE|CHECK|NOT NULL|DEFAULT|SERIAL)\b/g, '<span class="kw">$1</span>');
     wrap.innerHTML = `
-      <div class="schema-card">
-        <div class="schema-card-head">🗂️ ${tableName} — Columns</div>
-        <table class="schema-table">
-          <thead><tr><th>Field</th><th>Type</th><th>Null</th><th>Key</th><th>Default</th><th>Extra</th></tr></thead>
-          <tbody>${cols.map(c=>`<tr>
-            <td><strong>${c.Field}</strong>${c.Key==='PRI'?'<span class="pk-badge">PK</span>':''}${c.Key==='MUL'?'<span class="fk-badge">FK</span>':''}</td>
-            <td>${c.Type}</td>
-            <td>${c.Null==='YES'?'<span class="badge badge-yellow">YES</span>':'<span class="badge badge-red">NO</span>'}</td>
-            <td>${c.Key||'—'}</td>
-            <td>${c.Default!==null?c.Default:'<span class="null-val">NULL</span>'}</td>
-            <td>${c.Extra||'—'}</td>
-          </tr>`).join('')}</tbody>
-        </table>
+      <div class="section-head" style="padding-left:0;padding-right:0">
+        <div><div class="eyebrow">Structure</div><h2 style="margin-top:10px">${humanize(tableName)}</h2><div class="meta">${cols.length} fields</div></div>
       </div>
-      <div class="schema-card">
-        <div class="schema-card-head">📝 CREATE TABLE Statement</div>
-        <div class="ddl-box">${escHtml(ddl)}</div>
+      <div class="schema-grid">
+        <div>
+          <div class="eyebrow panel-label">Fields</div>
+          <table class="schema-table">
+            <thead><tr><th>Field</th><th>Type</th><th>Nullable</th><th>Default</th></tr></thead>
+            <tbody>${cols.map(c => `<tr>
+              <td>${escHtml(c.Field)}${keyBadge(c.Key)}</td>
+              <td>${escHtml(c.Extra === 'auto_increment' ? 'serial' : c.Type)}</td>
+              <td>${c.Null === 'YES' ? 'yes' : 'no'}</td>
+              <td>${c.Default !== null ? escHtml(c.Default) : '<span class="null-val">none</span>'}</td>
+            </tr>`).join('')}</tbody>
+          </table>
+        </div>
+        <div>
+          <div class="eyebrow panel-label">Definition</div>
+          <div class="ddl-box">${ddlHtml}</div>
+        </div>
       </div>`;
-  } catch(e) { wrap.innerHTML = `<div class="empty" style="padding:40px 0"><span>Error: ${e.message}</span></div>`; }
+  } catch (e) { wrap.innerHTML = `<div class="empty"><div class="ornament">!</div><p>Could not read the structure</p><span>${escHtml(e.message)}</span></div>`; }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-//  TABS
-// ═══════════════════════════════════════════════════════════════════════════
-document.querySelectorAll('.tab').forEach(t => {
-  t.addEventListener('click', () => {
-    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
-    document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));
-    t.classList.add('active');
-    const id = t.dataset.tab;
-    document.getElementById(`panel-${id}`).classList.add('active');
-    if (id === 'schema' && state.activeTable) loadSchema(state.activeTable);
-  });
-});
+// ─── Tabs, modals, toasts ───────────────────────────────────────────────
+function switchTab(id) {
+  document.querySelectorAll('.tab').forEach(x => x.classList.toggle('active', x.dataset.tab === id));
+  document.querySelectorAll('.panel').forEach(x => x.classList.toggle('active', x.id === `panel-${id}`));
+  if (id === 'schema' && state.activeTable) loadSchema(state.activeTable);
+}
+document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => switchTab(t.dataset.tab)));
 
-// ═══════════════════════════════════════════════════════════════════════════
-//  MODAL HELPERS
-// ═══════════════════════════════════════════════════════════════════════════
-function openModal(id) { document.getElementById(id).classList.add('open'); }
-function closeModal(id) { document.getElementById(id).classList.remove('open'); }
-document.querySelectorAll('.modal-bg').forEach(m => m.addEventListener('click', e => { if(e.target===m) m.classList.remove('open'); }));
+function openModal(id) { $(id).classList.add('open'); setTimeout(() => $(id).querySelector('input,select')?.focus(), 50); }
+function closeModal(id) { $(id).classList.remove('open'); }
+document.querySelectorAll('.modal-bg').forEach(m => m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); }));
+document.addEventListener('keydown', e => { if (e.key === 'Escape') document.querySelectorAll('.modal-bg.open').forEach(m => m.classList.remove('open')); });
 
-// ═══════════════════════════════════════════════════════════════════════════
-//  TOAST
-// ═══════════════════════════════════════════════════════════════════════════
-function toast(msg, type='info') {
+function toast(msg, type = 'info') {
   const el = document.createElement('div');
   el.className = `toast-msg ${type}`;
   el.textContent = msg;
-  document.getElementById('toast').appendChild(el);
-  setTimeout(()=>el.remove(), 3800);
+  $('toast').appendChild(el);
+  setTimeout(() => el.remove(), 3800);
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-//  UTILS
-// ═══════════════════════════════════════════════════════════════════════════
-function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function insertAtCursor(el, text) {
-  const s=el.selectionStart, e=el.selectionEnd;
-  el.value=el.value.substring(0,s)+text+el.value.substring(e);
-  el.selectionStart=el.selectionEnd=s+text.length;
+  const s = el.selectionStart, e = el.selectionEnd;
+  el.value = el.value.substring(0, s) + text + el.value.substring(e);
+  el.selectionStart = el.selectionEnd = s + text.length;
 }
 </script>
 </body>
