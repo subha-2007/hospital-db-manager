@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>🏥 Hospital Blood Bank DB Manager</title>
+<style>
+/* ─── Reset & base ─────────────────────────────────────────────────────── */
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#0f1117;color:#e2e8f0;min-height:100vh;display:flex;flex-direction:column}
+:root{
+  --red:#e53e3e;--red-dark:#c53030;--red-light:#fed7d7;
+  --accent:#fc8181;--accent2:#f6ad55;
+  --bg:#0f1117;--bg2:#1a1d27;--bg3:#242838;--bg4:#2d3250;
+  --border:#3a3f5c;--text:#e2e8f0;--muted:#718096;
+  --green:#68d391;--yellow:#f6e05e;--blue:#63b3ed;--purple:#b794f4;
+}
+
+/* ─── Scrollbar ────────────────────────────────────────────────────────── */
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:var(--bg2)}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+
+/* ─── Header ───────────────────────────────────────────────────────────── */
+header{background:linear-gradient(135deg,#7b0000 0%,#c53030 50%,#7b0000 100%);padding:16px 24px;display:flex;align-items:center;gap:14px;box-shadow:0 4px 20px rgba(197,48,48,.4)}
+header .logo{font-size:32px}
+header h1{font-size:1.5rem;font-weight:700;letter-spacing:.5px;color:#fff}
+header h1 span{font-size:.9rem;font-weight:400;opacity:.8;display:block}
+.status-dot{width:10px;height:10px;border-radius:50%;background:#68d391;margin-left:auto;box-shadow:0 0 8px #68d391;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 6px #68d391}50%{box-shadow:0 0 14px #68d391,0 0 6px #fff}}
+.status-dot.offline{background:#fc8181;box-shadow:0 0 8px #fc8181}
+
+/* ─── Layout ───────────────────────────────────────────────────────────── */
+.app{display:flex;flex:1;overflow:hidden;height:calc(100vh - 68px)}
+
+/* ─── Sidebar ──────────────────────────────────────────────────────────── */
+.sidebar{width:220px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+.sidebar-title{padding:14px 16px;font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);border-bottom:1px solid var(--border)}
+.table-list{overflow-y:auto;flex:1}
+.table-item{padding:11px 16px;cursor:pointer;display:flex;align-items:center;gap:8px;transition:all .15s;border-left:3px solid transparent;font-size:.9rem}
+.table-item:hover{background:var(--bg3);color:var(--accent)}
+.table-item.active{background:var(--bg4);border-left-color:var(--red);color:var(--accent);font-weight:600}
+.table-item .ticon{font-size:14px;opacity:.7}
+.table-count{margin-left:auto;background:var(--bg4);color:var(--muted);font-size:.7rem;padding:2px 7px;border-radius:10px}
+.table-item.active .table-count{background:var(--red);color:#fff}
+
+/* ─── Main ─────────────────────────────────────────────────────────────── */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+
+/* ─── Tabs ─────────────────────────────────────────────────────────────── */
+.tabs{display:flex;background:var(--bg2);border-bottom:1px solid var(--border);padding:0 16px;gap:4px}
+.tab{padding:12px 18px;cursor:pointer;font-size:.85rem;font-weight:500;border-bottom:2px solid transparent;color:var(--muted);transition:all .15s;user-select:none}
+.tab:hover{color:var(--text)}
+.tab.active{color:var(--accent);border-bottom-color:var(--red);font-weight:600}
+
+/* ─── Content panels ───────────────────────────────────────────────────── */
+.panel{display:none;flex:1;overflow:hidden;flex-direction:column}
+.panel.active{display:flex}
+
+/* ─── Toolbar ──────────────────────────────────────────────────────────── */
+.toolbar{padding:12px 16px;display:flex;gap:8px;align-items:center;background:var(--bg3);border-bottom:1px solid var(--border);flex-wrap:wrap}
+.toolbar input[type=search]{flex:1;min-width:180px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:7px 12px;color:var(--text);font-size:.85rem;outline:none;transition:border .15s}
+.toolbar input[type=search]:focus{border-color:var(--red)}
+.btn{padding:7px 14px;border-radius:6px;border:none;cursor:pointer;font-size:.82rem;font-weight:600;transition:all .15s;display:inline-flex;align-items:center;gap:5px}
+.btn-red{background:var(--red);color:#fff}.btn-red:hover{background:var(--red-dark)}
+.btn-outline{background:transparent;border:1px solid var(--border);color:var(--text)}.btn-outline:hover{border-color:var(--accent);color:var(--accent)}
+.btn-green{background:#276749;color:#fff}.btn-green:hover{background:#22543d}
+.btn-blue{background:#2b6cb0;color:#fff}.btn-blue:hover{background:#2c5282}
+.btn-yellow{background:#744210;color:#f6e05e}.btn-yellow:hover{background:#5f370e}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+
+/* ─── Data table ───────────────────────────────────────────────────────── */
+.table-wrap{flex:1;overflow:auto}
+table{width:100%;border-collapse:collapse;font-size:.82rem}
+thead th{position:sticky;top:0;background:#1e2235;padding:10px 14px;text-align:left;color:var(--accent2);font-weight:600;font-size:.75rem;text-transform:uppercase;letter-spacing:.8px;border-bottom:2px solid var(--border);white-space:nowrap}
+tbody tr{border-bottom:1px solid var(--border);transition:background .1s}
+tbody tr:hover{background:var(--bg3)}
+tbody td{padding:9px 14px;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:middle}
+.null-val{color:var(--muted);font-style:italic}
+.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:.72rem;font-weight:600}
+.badge-green{background:#1c4532;color:#68d391}
+.badge-red{background:#742a2a;color:#fc8181}
+.badge-yellow{background:#5f370e;color:#f6e05e}
+.badge-blue{background:#1a365d;color:#63b3ed}
+.action-cell{white-space:nowrap;display:flex;gap:6px}
+.btn-icon{padding:4px 8px;font-size:.75rem}
+
+/* ─── Pagination ───────────────────────────────────────────────────────── */
+.pagination{padding:10px 16px;display:flex;align-items:center;gap:10px;background:var(--bg2);border-top:1px solid var(--border);font-size:.8rem;color:var(--muted)}
+.pagination .pg-btn{padding:4px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:5px;cursor:pointer;color:var(--text);font-size:.8rem;transition:all .15s}
+.pagination .pg-btn:hover:not(:disabled){border-color:var(--accent);color:var(--accent)}
+.pagination .pg-btn:disabled{opacity:.3;cursor:default}
+
+/* ─── SQL Editor ───────────────────────────────────────────────────────── */
+.sql-wrap{display:flex;flex-direction:column;flex:1;overflow:hidden}
+.sql-editor-area{position:relative;flex:1;min-height:160px;max-height:320px}
+textarea.sql-input{width:100%;height:100%;background:var(--bg2);color:#a8ff78;font-family:'Cascadia Code','Fira Code','Consolas',monospace;font-size:.9rem;padding:16px;border:none;outline:none;resize:none;line-height:1.6;border-bottom:2px solid var(--border)}
+textarea.sql-input:focus{border-bottom-color:var(--red)}
+.sql-controls{padding:10px 16px;display:flex;gap:8px;align-items:center;background:var(--bg3);border-bottom:1px solid var(--border);flex-wrap:wrap}
+.sql-hint{font-size:.75rem;color:var(--muted);margin-left:auto}
+kbd{background:var(--bg4);padding:2px 5px;border-radius:3px;font-size:.7rem;border:1px solid var(--border)}
+.result-area{flex:1;overflow:auto;padding:16px}
+.result-card{background:var(--bg3);border-radius:8px;border:1px solid var(--border);margin-bottom:12px;overflow:hidden}
+.result-header{padding:10px 14px;font-size:.78rem;font-weight:600;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border)}
+.result-header.success{background:#1c4532;color:#68d391}
+.result-header.error{background:#742a2a;color:#fc8181}
+.result-body{padding:12px 14px;overflow-x:auto;font-family:monospace;font-size:.82rem}
+
+/* ─── Schema panel ─────────────────────────────────────────────────────── */
+.schema-wrap{padding:20px;overflow-y:auto;flex:1}
+.schema-card{background:var(--bg3);border-radius:10px;border:1px solid var(--border);overflow:hidden;margin-bottom:20px}
+.schema-card-head{padding:12px 18px;background:var(--bg4);font-weight:700;font-size:.95rem;display:flex;align-items:center;gap:8px}
+.schema-table{width:100%;border-collapse:collapse}
+.schema-table th{background:#1a1e32;padding:9px 14px;text-align:left;font-size:.72rem;text-transform:uppercase;letter-spacing:.8px;color:var(--accent2)}
+.schema-table td{padding:9px 14px;border-top:1px solid var(--border);font-size:.82rem;font-family:monospace}
+.schema-table tr:hover td{background:var(--bg2)}
+.pk-badge{background:#4a1942;color:#d6bcfa;padding:1px 6px;border-radius:4px;font-size:.68rem;margin-left:4px}
+.fk-badge{background:#1a365d;color:#90cdf4;padding:1px 6px;border-radius:4px;font-size:.68rem;margin-left:4px}
+.ddl-box{background:var(--bg2);border-radius:6px;padding:14px;font-family:monospace;font-size:.8rem;color:#a8ff78;overflow-x:auto;white-space:pre-wrap;word-break:break-all;border:1px solid var(--border);margin:14px 18px}
+
+/* ─── Modal ────────────────────────────────────────────────────────────── */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:1000;align-items:center;justify-content:center}
+.modal-bg.open{display:flex}
+.modal{background:var(--bg2);border-radius:12px;border:1px solid var(--border);padding:24px;min-width:420px;max-width:600px;width:90%;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.6)}
+.modal h2{margin-bottom:18px;font-size:1.1rem;display:flex;align-items:center;gap:8px}
+.form-group{margin-bottom:14px}
+.form-group label{display:block;font-size:.78rem;color:var(--muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px}
+.form-group input,.form-group select,.form-group textarea{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:9px 12px;color:var(--text);font-size:.88rem;outline:none;transition:border .15s}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:var(--red)}
+.form-group select option{background:var(--bg2)}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:20px}
+
+/* ─── Toast ────────────────────────────────────────────────────────────── */
+#toast{position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:8px}
+.toast-msg{padding:12px 18px;border-radius:8px;font-size:.85rem;font-weight:500;animation:fadeIn .2s;max-width:340px;box-shadow:0 4px 16px rgba(0,0,0,.4)}
+.toast-msg.success{background:#1c4532;color:#68d391;border-left:4px solid #68d391}
+.toast-msg.error{background:#742a2a;color:#fc8181;border-left:4px solid #fc8181}
+.toast-msg.info{background:#1a365d;color:#63b3ed;border-left:4px solid #63b3ed}
+@keyframes fadeIn{from{opacity:0;transform:translateX(30px)}to{opacity:1;transform:translateX(0)}}
+
+/* ─── Empty state ──────────────────────────────────────────────────────── */
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;gap:12px;color:var(--muted)}
+.empty .emojii{font-size:48px}
+
+/* ─── Loading ──────────────────────────────────────────────────────────── */
+.spinner{display:inline-block;width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-row td{text-align:center;padding:24px;color:var(--muted)}
+</style>
+</head>
+<body>
+
+<!-- ══ HEADER ══════════════════════════════════════════════════════════════ -->
+<header>
+  <div class="logo">🏥</div>
+  <h1>Hospital Blood Bank <span>Database Manager — MySQL Live</span></h1>
+  <div class="status-dot" id="statusDot" title="DB Connection"></div>
+</header>
+
+<div class="app">
+<!-- ══ SIDEBAR ══════════════════════════════════════════════════════════════ -->
+<aside class="sidebar">
+  <div class="sidebar-title">📋 Tables</div>
+  <div class="table-list" id="tableList"></div>
+</aside>
+
+<!-- ══ MAIN ═════════════════════════════════════════════════════════════════ -->
+<main class="main">
+  <div class="tabs">
+    <div class="tab active" data-tab="data">📊 Data</div>
+    <div class="tab" data-tab="sql">⌨️ SQL Console</div>
+    <div class="tab" data-tab="schema">🗂️ Schema</div>
+  </div>
+
+  <!-- DATA PANEL -->
+  <div class="panel active" id="panel-data">
+    <div id="noTable" class="empty" style="display:flex"><div class="emojii">👈</div><span>Select a table from the sidebar</span></div>
+    <div id="tableView" style="display:none;flex:1;flex-direction:column;overflow:hidden;display:none">
+      <div class="toolbar">
+        <span id="tableName" style="font-weight:700;color:var(--accent2)">—</span>
+        <input type="search" id="searchInput" placeholder="🔍 Filter rows…" oninput="filterRows()"/>
+        <button class="btn btn-green" onclick="openInsertModal()">➕ Insert Row</button>
+        <button class="btn btn-outline" onclick="refreshTable()">🔄 Refresh</button>
+      </div>
+      <div class="table-wrap" id="tableWrap">
+        <table id="dataTable">
+          <thead id="tableHead"></thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+      <div class="pagination" id="pagination"></div>
+    </div>
+  </div>
+
+  <!-- SQL CONSOLE PANEL -->
+  <div class="panel" id="panel-sql">
+    <div class="sql-wrap">
+      <div class="sql-editor-area">
+        <textarea class="sql-input" id="sqlInput" placeholder="-- Write any SQL here: SELECT, INSERT, UPDATE, DELETE, CREATE, ALTER, DROP…
+-- Tip: separate multiple statements with semicolons (;)
+SELECT * FROM donors LIMIT 10;" spellcheck="false"></textarea>
+      </div>
+      <div class="sql-controls">
+        <button class="btn btn-red" onclick="runSQL()">▶ Run SQL</button>
+        <button class="btn btn-outline" onclick="clearSQL()">🗑 Clear</button>
+        <div class="sql-hint"><kbd>Ctrl</kbd>+<kbd>Enter</kbd> to run</div>
+        <div style="margin-left:8px;display:flex;gap:6px;flex-wrap:wrap" id="snippets"></div>
+      </div>
+      <div class="result-area" id="resultArea">
+        <div class="empty" style="padding:40px 0"><div class="emojii">💻</div><span>Run a query to see results</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCHEMA PANEL -->
+  <div class="panel" id="panel-schema">
+    <div class="schema-wrap" id="schemaWrap">
+      <div class="empty" style="padding:40px 0"><div class="emojii">🗂️</div><span>Select a table to view its schema</span></div>
+    </div>
+  </div>
+</main>
+</div>
+
+<!-- ══ MODALS ════════════════════════════════════════════════════════════════ -->
+<!-- Insert Modal -->
+<div class="modal-bg" id="insertModal">
+  <div class="modal">
+    <h2>➕ <span id="insertModalTitle">Insert Row</span></h2>
+    <div id="insertForm"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('insertModal')">Cancel</button>
+      <button class="btn btn-green" onclick="submitInsert()">Insert</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Modal -->
+<div class="modal-bg" id="editModal">
+  <div class="modal">
+    <h2>✏️ <span id="editModalTitle">Edit Row</span></h2>
+    <div id="editForm"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('editModal')">Cancel</button>
+      <button class="btn btn-blue" onclick="submitEdit()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirm Modal -->
+<div class="modal-bg" id="deleteModal">
+  <div class="modal" style="max-width:400px">
+    <h2>🗑️ Delete Row</h2>
+    <p style="color:var(--muted);margin-bottom:18px">Are you sure you want to delete this row? This action <strong style="color:var(--accent)">cannot be undone</strong>.</p>
+    <div id="deleteInfo" style="background:var(--bg);border-radius:6px;padding:10px 14px;font-family:monospace;font-size:.82rem;margin-bottom:18px;border:1px solid var(--border)"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('deleteModal')">Cancel</button>
+      <button class="btn btn-red" onclick="submitDelete()">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast container -->
+<div id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════════════════════════════════
+const API = 'http://localhost:3000/api';
+let state = {
+  tables: [],
+  activeTable: null,
+  columns: [],
+  allRows: [],      // all rows fetched (client-side filter)
+  page: 1,
+  limit: 50,
+  total: 0,
+  pkColumn: null,
+  editRow: null,
+  deleteRow: null,
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+  checkConnection();
+  loadTables();
+  setupSQLEditor();
+  setupSnippets();
+  setInterval(checkConnection, 8000);
+});
+
+async function checkConnection() {
+  try {
+    const r = await fetch(`${API}/ping`);
+    const d = await r.json();
+    document.getElementById('statusDot').className = 'status-dot' + (d.ok ? '' : ' offline');
+  } catch { document.getElementById('statusDot').className = 'status-dot offline'; }
+}
+
+async function loadTables() {
+  const list = document.getElementById('tableList');
+  list.innerHTML = '<div style="padding:14px;color:var(--muted);font-size:.82rem"><span class="spinner"></span> Loading…</div>';
+  try {
+    const r = await fetch(`${API}/tables`);
+    state.tables = await r.json();
+    renderTableList();
+  } catch (e) { toast('Cannot reach server – is it running?', 'error'); }
+}
+
+function renderTableList() {
+  const icons = {donors:'🩸',donations:'💉',blood_units:'🧪',hospitals:'🏥',requests:'📋',issues:'📤',blood_compatibility:'🔗'};
+  const list = document.getElementById('tableList');
+  list.innerHTML = state.tables.map(t => `
+    <div class="table-item ${t===state.activeTable?'active':''}" onclick="selectTable('${t}')">
+      <span class="ticon">${icons[t]||'📄'}</span>${t}
+      <span class="table-count" id="cnt-${t}">…</span>
+    </div>`).join('');
+  state.tables.forEach(t => fetchCount(t));
+}
+
+async function fetchCount(t) {
+  try {
+    const r = await fetch(`${API}/table/${t}?limit=1`);
+    const d = await r.json();
+    const el = document.getElementById(`cnt-${t}`);
+    if (el) el.textContent = d.total;
+  } catch {}
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  TABLE SELECT & DATA
+// ═══════════════════════════════════════════════════════════════════════════
+async function selectTable(name) {
+  state.activeTable = name;
+  state.page = 1;
+  renderTableList();
+  document.getElementById('noTable').style.display = 'none';
+  const tv = document.getElementById('tableView');
+  tv.style.display = 'flex';
+  document.getElementById('tableName').textContent = name;
+  // If schema tab is visible, refresh it
+  if (document.getElementById('panel-schema').classList.contains('active')) loadSchema(name);
+  await loadTableData();
+}
+
+async function loadTableData() {
+  const name = state.activeTable;
+  if (!name) return;
+  const body = document.getElementById('tableBody');
+  body.innerHTML = `<tr class="loading-row"><td colspan="99"><span class="spinner"></span> Loading…</td></tr>`;
+  try {
+    const r = await fetch(`${API}/table/${name}?page=${state.page}&limit=${state.limit}`);
+    const d = await r.json();
+    state.columns = d.columns;
+    state.allRows = d.rows;
+    state.total = d.total;
+    // Detect PK column
+    const pk = d.columns.find(c => c.Key === 'PRI');
+    state.pkColumn = pk ? pk.Field : d.columns[0]?.Field;
+    renderTableHead(d.columns);
+    renderTableBody(d.rows);
+    renderPagination();
+    fetchCount(name);
+  } catch (e) { toast('Error loading table: ' + e.message, 'error'); }
+}
+
+function renderTableHead(cols) {
+  document.getElementById('tableHead').innerHTML =
+    '<tr>' + cols.map(c => `<th>${c.Field}</th>`).join('') + '<th style="text-align:right">Actions</th></tr>';
+}
+
+function renderTableBody(rows) {
+  const body = document.getElementById('tableBody');
+  if (!rows.length) { body.innerHTML = '<tr><td colspan="99" style="text-align:center;padding:24px;color:var(--muted)">No rows found</td></tr>'; return; }
+  body.innerHTML = rows.map(row => {
+    const cells = state.columns.map(c => {
+      const v = row[c.Field];
+      return `<td title="${v ?? ''}">${formatCell(c.Field, v)}</td>`;
+    }).join('');
+    const pk = row[state.pkColumn];
+    return `<tr>${cells}<td><div class="action-cell">
+      <button class="btn btn-blue btn-icon" onclick="openEditModal(${JSON.stringify(JSON.stringify(row)).slice(1,-1)})">✏️</button>
+      <button class="btn btn-red btn-icon" onclick="openDeleteModal(${JSON.stringify(JSON.stringify(row)).slice(1,-1)})">🗑</button>
+    </div></td></tr>`;
+  }).join('');
+}
+
+function formatCell(field, v) {
+  if (v === null || v === undefined) return '<span class="null-val">NULL</span>';
+  if (field === 'status') {
+    const map = {Available:'green',Issued:'blue',Expired:'red',Pending:'yellow',Fulfilled:'green'};
+    const cls = map[v] || 'blue';
+    return `<span class="badge badge-${cls}">${v}</span>`;
+  }
+  if (typeof v === 'string' && v.match(/^\d{4}-\d{2}-\d{2}T/)) return v.slice(0,10);
+  if (v instanceof Date) return v.toISOString().slice(0,10);
+  return String(v);
+}
+
+function filterRows() {
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  if (!q) { renderTableBody(state.allRows); return; }
+  const filtered = state.allRows.filter(row =>
+    Object.values(row).some(v => String(v ?? '').toLowerCase().includes(q))
+  );
+  renderTableBody(filtered);
+}
+
+function renderPagination() {
+  const pages = Math.ceil(state.total / state.limit);
+  document.getElementById('pagination').innerHTML = `
+    <button class="pg-btn" onclick="changePage(${state.page-1})" ${state.page<=1?'disabled':''}>◀ Prev</button>
+    <span>Page <strong>${state.page}</strong> of <strong>${pages}</strong> — <strong>${state.total}</strong> total rows</span>
+    <button class="pg-btn" onclick="changePage(${state.page+1})" ${state.page>=pages?'disabled':''}>Next ▶</button>`;
+}
+
+function changePage(p) { state.page = p; loadTableData(); }
+function refreshTable() { loadTableData(); toast('Table refreshed', 'info'); }
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  INSERT MODAL
+// ═══════════════════════════════════════════════════════════════════════════
+function openInsertModal() {
+  if (!state.activeTable) return toast('Select a table first', 'info');
+  document.getElementById('insertModalTitle').textContent = `Insert into ${state.activeTable}`;
+  const form = document.getElementById('insertForm');
+  form.innerHTML = state.columns.filter(c => c.Extra !== 'auto_increment').map(c => buildField(c)).join('');
+  openModal('insertModal');
+}
+
+function buildField(c, val='') {
+  const label = `${c.Field} <small style="color:var(--muted)">${c.Type}</small>${c.Key==='PRI'?'<span class="pk-badge">PK</span>':''}`;
+  const name = `data-${c.Field}`;
+  // ENUM
+  if (c.Type.startsWith('enum')) {
+    const opts = c.Type.match(/'([^']+)'/g).map(o => o.replace(/'/g,''));
+    return `<div class="form-group"><label>${label}</label>
+      <select name="${name}">${opts.map(o=>`<option ${o===val?'selected':''}>${o}</option>`).join('')}</select></div>`;
+  }
+  // DATE
+  if (c.Type === 'date') return `<div class="form-group"><label>${label}</label><input type="date" name="${name}" value="${val}"/></div>`;
+  // INT
+  if (c.Type.includes('int')) return `<div class="form-group"><label>${label}</label><input type="number" name="${name}" value="${val}" placeholder="${c.Null==='YES'?'NULL (optional)':''}"/></div>`;
+  return `<div class="form-group"><label>${label}</label><input type="text" name="${name}" value="${val}" placeholder="${c.Null==='YES'?'NULL (optional)':''}"/></div>`;
+}
+
+async function submitInsert() {
+  const inputs = document.querySelectorAll('#insertForm [name^="data-"]');
+  const data = {};
+  inputs.forEach(el => {
+    const k = el.name.replace('data-','');
+    const v = el.value.trim();
+    if (v !== '') data[k] = v;
+  });
+  try {
+    const r = await fetch(`${API}/table/${state.activeTable}/row`, {
+      method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(data)
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error);
+    toast(`✅ Row inserted (ID: ${d.insertId})`, 'success');
+    closeModal('insertModal');
+    loadTableData();
+  } catch(e) { toast('Insert failed: ' + e.message, 'error'); }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  EDIT MODAL
+// ═══════════════════════════════════════════════════════════════════════════
+function openEditModal(rowJson) {
+  const row = JSON.parse(rowJson);
+  state.editRow = row;
+  document.getElementById('editModalTitle').textContent = `Edit ${state.activeTable}`;
+  const form = document.getElementById('editForm');
+  form.innerHTML = state.columns.map(c => buildField(c, row[c.Field] ?? '')).join('');
+  openModal('editModal');
+}
+
+async function submitEdit() {
+  const inputs = document.querySelectorAll('#editForm [name^="data-"]');
+  const data = {};
+  inputs.forEach(el => {
+    const k = el.name.replace('data-','');
+    const v = el.value.trim();
+    data[k] = v === '' ? null : v;
+  });
+  try {
+    const r = await fetch(`${API}/table/${state.activeTable}/row`, {
+      method:'PUT', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ pkColumn: state.pkColumn, pkValue: state.editRow[state.pkColumn], data })
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error);
+    toast(`✅ Row updated (${d.affectedRows} affected)`, 'success');
+    closeModal('editModal');
+    loadTableData();
+  } catch(e) { toast('Update failed: ' + e.message, 'error'); }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  DELETE MODAL
+// ═══════════════════════════════════════════════════════════════════════════
+function openDeleteModal(rowJson) {
+  const row = JSON.parse(rowJson);
+  state.deleteRow = row;
+  document.getElementById('deleteInfo').textContent = JSON.stringify(row, null, 2);
+  openModal('deleteModal');
+}
+
+async function submitDelete() {
+  try {
+    const r = await fetch(`${API}/table/${state.activeTable}/row`, {
+      method:'DELETE', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ pkColumn: state.pkColumn, pkValue: state.deleteRow[state.pkColumn] })
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error);
+    toast(`🗑️ Row deleted (${d.affectedRows} affected)`, 'success');
+    closeModal('deleteModal');
+    loadTableData();
+  } catch(e) { toast('Delete failed: ' + e.message, 'error'); }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  SQL CONSOLE
+// ═══════════════════════════════════════════════════════════════════════════
+function setupSQLEditor() {
+  document.getElementById('sqlInput').addEventListener('keydown', e => {
+    if (e.ctrlKey && e.key === 'Enter') { e.preventDefault(); runSQL(); }
+    if (e.key === 'Tab') { e.preventDefault(); insertAtCursor(e.target, '  '); }
+  });
+}
+
+function setupSnippets() {
+  const snips = [
+    ['SELECT *', `SELECT * FROM donors LIMIT 20;`],
+    ['DESCRIBE', `DESCRIBE donors;`],
+    ['SHOW TABLES', `SHOW TABLES;`],
+    ['CREATE TABLE', `CREATE TABLE example (\n  id INT AUTO_INCREMENT PRIMARY KEY,\n  name VARCHAR(100) NOT NULL\n);`],
+    ['ALTER TABLE', `ALTER TABLE donors ADD COLUMN email VARCHAR(100);`],
+    ['DROP TABLE', `DROP TABLE IF EXISTS example;`],
+    ['JOIN Example', `SELECT d.name, dn.donation_date, b.blood_group, b.status\nFROM donors d\nJOIN donations dn ON d.donor_id = dn.donor_id\nJOIN blood_units b ON dn.donation_id = b.donation_id\nLIMIT 20;`],
+  ];
+  const el = document.getElementById('snippets');
+  el.innerHTML = snips.map(([label, sql]) =>
+    `<button class="btn btn-outline" style="font-size:.72rem;padding:4px 10px" onclick='loadSnippet(${JSON.stringify(sql)})'>${label}</button>`
+  ).join('');
+}
+
+function loadSnippet(sql) { document.getElementById('sqlInput').value = sql; }
+function clearSQL() { document.getElementById('sqlInput').value = ''; document.getElementById('resultArea').innerHTML = '<div class="empty" style="padding:40px 0"><div class="emojii">💻</div><span>Run a query to see results</span></div>'; }
+
+async function runSQL() {
+  const sql = document.getElementById('sqlInput').value.trim();
+  if (!sql) return;
+  const area = document.getElementById('resultArea');
+  area.innerHTML = '<div class="empty" style="padding:40px 0"><span class="spinner"></span></div>';
+  try {
+    const r = await fetch(`${API}/query`, {
+      method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({sql})
+    });
+    const d = await r.json();
+    if (!d.success) { area.innerHTML = renderError(d.error, sql); return; }
+    area.innerHTML = d.results.map(res => renderResult(res)).join('');
+    // Refresh sidebar counts & active table
+    loadTables();
+    if (state.activeTable) loadTableData();
+  } catch(e) { area.innerHTML = renderError(e.message, sql); }
+}
+
+function renderResult(res) {
+  let body = '';
+  if (res.rows && res.rows.length) {
+    const cols = Object.keys(res.rows[0]);
+    body = `<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:.8rem">
+      <thead><tr>${cols.map(c=>`<th style="padding:7px 12px;background:#1a1e32;text-align:left;color:var(--accent2);white-space:nowrap">${c}</th>`).join('')}</tr></thead>
+      <tbody>${res.rows.map(row=>`<tr style="border-bottom:1px solid var(--border)">${cols.map(c=>`<td style="padding:6px 12px;font-family:monospace">${formatCell(c,row[c])}</td>`).join('')}</tr>`).join('')}</tbody>
+    </table></div><div style="padding:8px 12px;font-size:.75rem;color:var(--muted)">${res.rows.length} rows returned</div>`;
+  } else {
+    const info = [];
+    if (res.affectedRows !== null) info.push(`${res.affectedRows} row(s) affected`);
+    if (res.insertId) info.push(`Insert ID: ${res.insertId}`);
+    body = `<div style="padding:12px 14px;color:var(--green)">${info.join(' · ') || 'Query executed successfully'}</div>`;
+  }
+  return `<div class="result-card"><div class="result-header success">✅ <code style="font-size:.78rem">${escHtml(res.statement)}${res.statement.length>=120?'…':''}</code></div><div class="result-body">${body}</div></div>`;
+}
+
+function renderError(msg, sql) {
+  return `<div class="result-card"><div class="result-header error">❌ Error</div><div class="result-body" style="color:var(--accent)">${escHtml(msg)}</div></div>`;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  SCHEMA PANEL
+// ═══════════════════════════════════════════════════════════════════════════
+async function loadSchema(tableName) {
+  const wrap = document.getElementById('schemaWrap');
+  wrap.innerHTML = '<div class="empty" style="padding:40px 0"><span class="spinner"></span></div>';
+  try {
+    const [colsR, ddlR] = await Promise.all([
+      fetch(`${API}/table/${tableName}/columns`).then(r=>r.json()),
+      fetch(`${API}/table/${tableName}/schema`).then(r=>r.json()),
+    ]);
+    const cols = colsR;
+    const ddl = ddlR.schema;
+    wrap.innerHTML = `
+      <div class="schema-card">
+        <div class="schema-card-head">🗂️ ${tableName} — Columns</div>
+        <table class="schema-table">
+          <thead><tr><th>Field</th><th>Type</th><th>Null</th><th>Key</th><th>Default</th><th>Extra</th></tr></thead>
+          <tbody>${cols.map(c=>`<tr>
+            <td><strong>${c.Field}</strong>${c.Key==='PRI'?'<span class="pk-badge">PK</span>':''}${c.Key==='MUL'?'<span class="fk-badge">FK</span>':''}</td>
+            <td>${c.Type}</td>
+            <td>${c.Null==='YES'?'<span class="badge badge-yellow">YES</span>':'<span class="badge badge-red">NO</span>'}</td>
+            <td>${c.Key||'—'}</td>
+            <td>${c.Default!==null?c.Default:'<span class="null-val">NULL</span>'}</td>
+            <td>${c.Extra||'—'}</td>
+          </tr>`).join('')}</tbody>
+        </table>
+      </div>
+      <div class="schema-card">
+        <div class="schema-card-head">📝 CREATE TABLE Statement</div>
+        <div class="ddl-box">${escHtml(ddl)}</div>
+      </div>`;
+  } catch(e) { wrap.innerHTML = `<div class="empty" style="padding:40px 0"><span>Error: ${e.message}</span></div>`; }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  TABS
+// ═══════════════════════════════════════════════════════════════════════════
+document.querySelectorAll('.tab').forEach(t => {
+  t.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));
+    t.classList.add('active');
+    const id = t.dataset.tab;
+    document.getElementById(`panel-${id}`).classList.add('active');
+    if (id === 'schema' && state.activeTable) loadSchema(state.activeTable);
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  MODAL HELPERS
+// ═══════════════════════════════════════════════════════════════════════════
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-bg').forEach(m => m.addEventListener('click', e => { if(e.target===m) m.classList.remove('open'); }));
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  TOAST
+// ═══════════════════════════════════════════════════════════════════════════
+function toast(msg, type='info') {
+  const el = document.createElement('div');
+  el.className = `toast-msg ${type}`;
+  el.textContent = msg;
+  document.getElementById('toast').appendChild(el);
+  setTimeout(()=>el.remove(), 3800);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  UTILS
+// ═══════════════════════════════════════════════════════════════════════════
+function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function insertAtCursor(el, text) {
+  const s=el.selectionStart, e=el.selectionEnd;
+  el.value=el.value.substring(0,s)+text+el.value.substring(e);
+  el.selectionStart=el.selectionEnd=s+text.length;
+}
+</script>
+</body>
+</html>
